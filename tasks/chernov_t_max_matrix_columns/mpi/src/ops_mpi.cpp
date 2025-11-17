@@ -113,6 +113,7 @@ bool ChernovTMaxMatrixColumnsMPI::RunImpl() {
 bool ChernovTMaxMatrixColumnsMPI::PostProcessingImpl() {
   input_matrix_.clear();
   return true;
+  
 }
 
-}  // namespace chernov_t_max_matrix_columns
+}  // namespace chernov_t_max_matrix_columns 
