@@ -2,14 +2,15 @@
 
 #include <string>
 #include <tuple>
+#include <vector>
 
 #include "task/include/task.hpp"
 
 namespace chernov_t_max_matrix_columns {
 
-using InType = int;
-using OutType = int;
-using TestType = std::tuple<int, std::string>;
+using InType = std::tuple<std::size_t, std::size_t, std::vector<int>>;
+using OutType = std::vector<int>;
+using TestType = std::tuple<std::string, std::string, std::vector<int>>;
 using BaseTask = ppc::task::Task<InType, OutType>;
 
 }  // namespace chernov_t_max_matrix_columns

@@ -17,6 +17,11 @@ class ChernovTMaxMatrixColumnsMPI : public BaseTask {
   bool PreProcessingImpl() override;
   bool RunImpl() override;
   bool PostProcessingImpl() override;
+
+  std::size_t rows_ = 0;
+  std::size_t cols_ = 0;
+  std::vector<int> input_matrix_;
+  bool valid_ = false;
 };
 
 }  // namespace chernov_t_max_matrix_columns

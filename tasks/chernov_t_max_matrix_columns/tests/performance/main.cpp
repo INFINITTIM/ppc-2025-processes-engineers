@@ -1,22 +1,38 @@
 #include <gtest/gtest.h>
 
+#include <random>
+
+#include <cstddef>
+#include <tuple>
+#include <vector>
+
 #include "chernov_t_max_matrix_columns/common/include/common.hpp"
 #include "chernov_t_max_matrix_columns/mpi/include/ops_mpi.hpp"
 #include "chernov_t_max_matrix_columns/seq/include/ops_seq.hpp"
-#include "util/include/perf_test_util.hpp"
+#include "util/include/perf_test_util.hpp" 
 
 namespace chernov_t_max_matrix_columns {
 
-class ChernovTPerfTestProcesses : public ppc::util::BaseRunPerfTests<InType, OutType> {
-  const int kCount_ = 100;
+class ChernovTPerfTest : public ppc::util::BaseRunPerfTests<InType, OutType> {
+ private:
+  const std::size_t kRows = 2000;
+  const std::size_t kCols = 2000;
   InType input_data_{};
 
   void SetUp() override {
-    input_data_ = kCount_;
+    std::vector<int> matrix_data(kRows * kCols);
+    std::mt19937 gen(42);
+    std::uniform_int_distribution<int> dist(-10000, 10000); 
+
+    for (std::size_t i = 0; i < matrix_data.size(); ++i) {
+      matrix_data[i] = dist(gen);
+    }
+
+    input_data_ = std::make_tuple(kRows, kCols, matrix_data);
   }
 
   bool CheckTestOutputData(OutType &output_data) final {
-    return input_data_ == output_data;
+    return !output_data.empty() && (output_data.size() == kCols);
   }
 
   InType GetTestInputData() final {
@@ -24,7 +40,7 @@ class ChernovTPerfTestProcesses : public ppc::util::BaseRunPerfTests<InType, Out
   }
 };
 
-TEST_P(ChernovTPerfTestProcesses, RunPerfModes) {
+TEST_P(ChernovTPerfTest, RunPerfModes) {
   ExecuteTest(GetParam());
 }
 
@@ -33,8 +49,8 @@ const auto kAllPerfTasks =
 
 const auto kGtestValues = ppc::util::TupleToGTestValues(kAllPerfTasks);
 
-const auto kPerfTestName = ChernovTPerfTestProcesses::CustomPerfTestName;
+const auto kPerfTestName = ChernovTPerfTest::CustomPerfTestName;
 
-INSTANTIATE_TEST_SUITE_P(RunModeTests, ChernovTPerfTestProcesses, kGtestValues, kPerfTestName);
+INSTANTIATE_TEST_SUITE_P(ChernovTPerfTests, ChernovTPerfTest, kGtestValues, kPerfTestName);
 
 }  // namespace chernov_t_max_matrix_columns

@@ -1,60 +1,61 @@
 #include "chernov_t_max_matrix_columns/seq/include/ops_seq.hpp"
 
-#include <numeric>
+#include <algorithm>
 #include <vector>
 
 #include "chernov_t_max_matrix_columns/common/include/common.hpp"
-#include "util/include/util.hpp"
 
 namespace chernov_t_max_matrix_columns {
 
 ChernovTMaxMatrixColumnsSEQ::ChernovTMaxMatrixColumnsSEQ(const InType &in) {
   SetTypeOfTask(GetStaticTypeOfTask());
   GetInput() = in;
-  GetOutput() = 0;
+  GetOutput() = std::vector<int>();
 }
 
 bool ChernovTMaxMatrixColumnsSEQ::ValidationImpl() {
-  return (GetInput() > 0) && (GetOutput() == 0);
+  std::size_t m = std::get<0>(GetInput());
+  std::size_t n = std::get<1>(GetInput());
+  std::vector<int> &matrix = std::get<2>(GetInput());
+  
+  valid_ = (m > 0) && (n > 0) && (matrix.size() == m * n);
+  return valid_;
 }
 
 bool ChernovTMaxMatrixColumnsSEQ::PreProcessingImpl() {
-  GetOutput() = 2 * GetInput();
-  return GetOutput() > 0;
+  if (!valid_) return false;
+
+  rows_ = std::get<0>(GetInput());
+  cols_ = std::get<1>(GetInput());
+  input_matrix_ = std::get<2>(GetInput());
+
+  return true;
 }
 
 bool ChernovTMaxMatrixColumnsSEQ::RunImpl() {
-  if (GetInput() == 0) {
-    return false;
-  }
+  if (!valid_) return false;
 
-  for (InType i = 0; i < GetInput(); i++) {
-    for (InType j = 0; j < GetInput(); j++) {
-      for (InType k = 0; k < GetInput(); k++) {
-        std::vector<InType> tmp(i + j + k, 1);
-        GetOutput() += std::accumulate(tmp.begin(), tmp.end(), 0);
-        GetOutput() -= i + j + k;
+  std::vector<int> result(cols_);
+  
+  for (std::size_t col = 0; col < cols_; ++col) {
+    int max_val = input_matrix_[col];
+    
+    for (std::size_t row = 1; row < rows_; ++row) {
+      std::size_t index = row * cols_ + col;
+      if (input_matrix_[index] > max_val) {
+        max_val = input_matrix_[index];
       }
     }
+    result[col] = max_val;
   }
 
-  const int num_threads = ppc::util::GetNumThreads();
-  GetOutput() *= num_threads;
-
-  int counter = 0;
-  for (int i = 0; i < num_threads; i++) {
-    counter++;
-  }
-
-  if (counter != 0) {
-    GetOutput() /= counter;
-  }
-  return GetOutput() > 0;
+  GetOutput() = result;
+  return true;
 }
 
 bool ChernovTMaxMatrixColumnsSEQ::PostProcessingImpl() {
-  GetOutput() -= GetInput();
-  return GetOutput() > 0;
+  input_matrix_.clear();
+  return !GetOutput().empty();
 }
 
 }  // namespace chernov_t_max_matrix_columns
