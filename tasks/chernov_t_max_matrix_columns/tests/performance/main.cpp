@@ -31,7 +31,7 @@ class ChernovTPerfTest : public ppc::util::BaseRunPerfTests<InType, OutType> {
   }
 
   bool CheckTestOutputData(OutType &output_data) final {
-    return !output_data.empty() && (output_data.size() == kCols);
+    return !output_data.empty() && (output_data.size() == kCols_);
   }
 
   InType GetTestInputData() final {
