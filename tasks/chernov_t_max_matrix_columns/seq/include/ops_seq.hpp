@@ -1,5 +1,8 @@
 #pragma once
 
+#include <cstddef>
+#include <vector>
+
 #include "chernov_t_max_matrix_columns/common/include/common.hpp"
 #include "task/include/task.hpp"
 

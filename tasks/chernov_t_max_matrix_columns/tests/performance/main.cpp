@@ -14,12 +14,12 @@ namespace chernov_t_max_matrix_columns {
 
 class ChernovTPerfTest : public ppc::util::BaseRunPerfTests<InType, OutType> {
  private:
-  const std::size_t kRows = 2000;
-  const std::size_t kCols = 2000;
+  const std::size_t kRows_ = 2000;
+  const std::size_t kCols_ = 2000;
   InType input_data_{};
 
   void SetUp() override {
-    std::vector<int> matrix_data(kRows * kCols);
+    std::vector<int> matrix_data(kRows_ * kCols_);
     std::mt19937 gen(42);
     std::uniform_int_distribution<int> dist(-10000, 10000);
 
@@ -27,7 +27,7 @@ class ChernovTPerfTest : public ppc::util::BaseRunPerfTests<InType, OutType> {
       matrix_data[i] = dist(gen);
     }
 
-    input_data_ = std::make_tuple(kRows, kCols, matrix_data);
+    input_data_ = std::make_tuple(kRows_, kCols_, matrix_data);
   }
 
   bool CheckTestOutputData(OutType &output_data) final {

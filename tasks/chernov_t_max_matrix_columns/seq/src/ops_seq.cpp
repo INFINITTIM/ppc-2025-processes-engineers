@@ -2,6 +2,7 @@
 
 #include <algorithm>
 #include <vector>
+#include <cstddef>
 
 #include "chernov_t_max_matrix_columns/common/include/common.hpp"
 
@@ -45,10 +46,8 @@ bool ChernovTMaxMatrixColumnsSEQ::RunImpl() {
     int max_val = input_matrix_[col];
 
     for (std::size_t row = 1; row < rows_; ++row) {
-      std::size_t index = row * cols_ + col;
-      if (input_matrix_[index] > max_val) {
-        max_val = input_matrix_[index];
-      }
+      std::size_t index = (row * cols_) + col;
+      max_val = std::max(input_matrix_[index], max_val);
     }
     result[col] = max_val;
   }

@@ -5,6 +5,8 @@
 #include <string>
 #include <tuple>
 #include <vector>
+#include <cstddef>
+#include <stdexcept> 
 
 #include "chernov_t_max_matrix_columns/common/include/common.hpp"
 #include "chernov_t_max_matrix_columns/mpi/include/ops_mpi.hpp"
@@ -59,7 +61,8 @@ class ChernovTFuncTestsProcesses : public ppc::util::BaseRunFuncTests<InType, Ou
       throw std::runtime_error("Failed to open file: " + abs_path);
     }
 
-    std::size_t rows, cols;
+    std::size_t rows = 0;
+    std::size_t cols = 0;
     file >> rows >> cols;
 
     std::vector<int> matrix_data(rows * cols);

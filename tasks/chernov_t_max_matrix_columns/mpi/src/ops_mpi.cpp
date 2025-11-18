@@ -2,6 +2,8 @@
 
 #include <mpi.h>
 
+#include <cstddef>
+#include <algorithm> 
 #include <algorithm>
 #include <vector>
 
@@ -41,12 +43,13 @@ bool ChernovTMaxMatrixColumnsMPI::RunImpl() {
     return false;
   }
 
-  int rank, size;
+  int rank = 0;
+  int size = 0;
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
   MPI_Comm_size(MPI_COMM_WORLD, &size);
 
-  int cols_per_proc = cols_ / size;
-  int remainder = cols_ % size;
+  auto cols_per_proc = static_cast<int>(cols_ / size);
+  auto remainder = static_cast<int>(cols_ % size);
 
   int start_col = rank * cols_per_proc + std::min(rank, remainder);
   int num_local_cols = cols_per_proc + (rank < remainder ? 1 : 0);
@@ -59,9 +62,7 @@ bool ChernovTMaxMatrixColumnsMPI::RunImpl() {
 
     for (std::size_t row = 1; row < rows_; ++row) {
       std::size_t index = row * cols_ + global_col;
-      if (input_matrix_[index] > max_val) {
-        max_val = input_matrix_[index];
-      }
+      max_val = std::max(input_matrix_[index], max_val);
     }
     local_maxes[local_idx] = max_val;
   }
@@ -69,14 +70,14 @@ bool ChernovTMaxMatrixColumnsMPI::RunImpl() {
   std::vector<int> recvcounts(size);
   std::vector<int> displs(size);
 
-  for (int p = 0; p < size; ++p) {
-    int p_cols = cols_per_proc + (p < remainder ? 1 : 0);
-    recvcounts[p] = p_cols;
+  for (int process = 0; process < size; ++process) {
+    int p_cols = cols_per_proc + (process < remainder ? 1 : 0);
+    recvcounts[process] = p_cols;
   }
 
   displs[0] = 0;
-  for (int p = 1; p < size; ++p) {
-    displs[p] = displs[p - 1] + recvcounts[p - 1];
+  for (int process = 1; process < size; ++process) {
+    displs[process] = displs[process - 1] + recvcounts[process - 1];
   }
 
   std::vector<int> all_local_maxes;
@@ -89,11 +90,11 @@ bool ChernovTMaxMatrixColumnsMPI::RunImpl() {
 
   if (rank == 0) {
     std::vector<int> final_result(cols_);
-    for (int p = 0; p < size; ++p) {
-      int p_cols = cols_per_proc + (p < remainder ? 1 : 0);
-      int p_start_col = p * cols_per_proc + std::min(p, remainder);
+    for (int process = 0; process < size; ++process) {
+      int p_cols = cols_per_proc + (process < remainder ? 1 : 0);
+      int p_start_col = process * cols_per_proc + std::min(process, remainder);
       for (int j = 0; j < p_cols; ++j) {
-        final_result[p_start_col + j] = all_local_maxes[displs[p] + j];
+        final_result[p_start_col + j] = all_local_maxes[displs[process] + j];
       }
     }
     GetOutput() = final_result;
