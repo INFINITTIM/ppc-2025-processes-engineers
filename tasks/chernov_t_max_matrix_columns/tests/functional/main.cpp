@@ -1,12 +1,12 @@
 #include <gtest/gtest.h>
 
 #include <array>
+#include <cstddef>
 #include <fstream>
+#include <stdexcept>
 #include <string>
 #include <tuple>
 #include <vector>
-#include <cstddef>
-#include <stdexcept> 
 
 #include "chernov_t_max_matrix_columns/common/include/common.hpp"
 #include "chernov_t_max_matrix_columns/mpi/include/ops_mpi.hpp"

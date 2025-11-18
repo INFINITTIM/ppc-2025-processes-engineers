@@ -1,8 +1,8 @@
 #include "chernov_t_max_matrix_columns/seq/include/ops_seq.hpp"
 
 #include <algorithm>
-#include <vector>
 #include <cstddef>
+#include <vector>
 
 #include "chernov_t_max_matrix_columns/common/include/common.hpp"
 

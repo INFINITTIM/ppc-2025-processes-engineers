@@ -2,9 +2,8 @@
 
 #include <mpi.h>
 
-#include <cstddef>
-#include <algorithm> 
 #include <algorithm>
+#include <cstddef>
 #include <vector>
 
 #include "chernov_t_max_matrix_columns/common/include/common.hpp"
