@@ -17,13 +17,15 @@ bool ChernovTMaxMatrixColumnsSEQ::ValidationImpl() {
   std::size_t m = std::get<0>(GetInput());
   std::size_t n = std::get<1>(GetInput());
   std::vector<int> &matrix = std::get<2>(GetInput());
-  
+
   valid_ = (m > 0) && (n > 0) && (matrix.size() == m * n);
   return valid_;
 }
 
 bool ChernovTMaxMatrixColumnsSEQ::PreProcessingImpl() {
-  if (!valid_) return false;
+  if (!valid_) {
+    return false;
+  }
 
   rows_ = std::get<0>(GetInput());
   cols_ = std::get<1>(GetInput());
@@ -33,13 +35,15 @@ bool ChernovTMaxMatrixColumnsSEQ::PreProcessingImpl() {
 }
 
 bool ChernovTMaxMatrixColumnsSEQ::RunImpl() {
-  if (!valid_) return false;
+  if (!valid_) {
+    return false;
+  }
 
   std::vector<int> result(cols_);
-  
+
   for (std::size_t col = 0; col < cols_; ++col) {
     int max_val = input_matrix_[col];
-    
+
     for (std::size_t row = 1; row < rows_; ++row) {
       std::size_t index = row * cols_ + col;
       if (input_matrix_[index] > max_val) {

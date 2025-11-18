@@ -1,15 +1,14 @@
 #include <gtest/gtest.h>
 
-#include <random>
-
 #include <cstddef>
+#include <random>
 #include <tuple>
 #include <vector>
 
 #include "chernov_t_max_matrix_columns/common/include/common.hpp"
 #include "chernov_t_max_matrix_columns/mpi/include/ops_mpi.hpp"
 #include "chernov_t_max_matrix_columns/seq/include/ops_seq.hpp"
-#include "util/include/perf_test_util.hpp" 
+#include "util/include/perf_test_util.hpp"
 
 namespace chernov_t_max_matrix_columns {
 
@@ -22,7 +21,7 @@ class ChernovTPerfTest : public ppc::util::BaseRunPerfTests<InType, OutType> {
   void SetUp() override {
     std::vector<int> matrix_data(kRows * kCols);
     std::mt19937 gen(42);
-    std::uniform_int_distribution<int> dist(-10000, 10000); 
+    std::uniform_int_distribution<int> dist(-10000, 10000);
 
     for (std::size_t i = 0; i < matrix_data.size(); ++i) {
       matrix_data[i] = dist(gen);
@@ -45,7 +44,8 @@ TEST_P(ChernovTPerfTest, RunPerfModes) {
 }
 
 const auto kAllPerfTasks =
-    ppc::util::MakeAllPerfTasks<InType, ChernovTMaxMatrixColumnsMPI, ChernovTMaxMatrixColumnsSEQ>(PPC_SETTINGS_chernov_t_max_matrix_columns);
+    ppc::util::MakeAllPerfTasks<InType, ChernovTMaxMatrixColumnsMPI, ChernovTMaxMatrixColumnsSEQ>(
+        PPC_SETTINGS_chernov_t_max_matrix_columns);
 
 const auto kGtestValues = ppc::util::TupleToGTestValues(kAllPerfTasks);
 

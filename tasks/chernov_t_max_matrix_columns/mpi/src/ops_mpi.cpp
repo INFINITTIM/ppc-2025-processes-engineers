@@ -1,6 +1,7 @@
 #include "chernov_t_max_matrix_columns/mpi/include/ops_mpi.hpp"
 
 #include <mpi.h>
+
 #include <algorithm>
 #include <vector>
 
@@ -18,23 +19,27 @@ bool ChernovTMaxMatrixColumnsMPI::ValidationImpl() {
   std::size_t m = std::get<0>(GetInput());
   std::size_t n = std::get<1>(GetInput());
   std::vector<int> &matrix = std::get<2>(GetInput());
-  
+
   valid_ = (m > 0) && (n > 0) && (matrix.size() == m * n);
   return valid_;
 }
 
 bool ChernovTMaxMatrixColumnsMPI::PreProcessingImpl() {
-  if (!valid_) return false;
-  
+  if (!valid_) {
+    return false;
+  }
+
   rows_ = std::get<0>(GetInput());
   cols_ = std::get<1>(GetInput());
   input_matrix_ = std::get<2>(GetInput());
-  
+
   return true;
 }
 
 bool ChernovTMaxMatrixColumnsMPI::RunImpl() {
-  if (!valid_) return false;
+  if (!valid_) {
+    return false;
+  }
 
   int rank, size;
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
@@ -50,7 +55,7 @@ bool ChernovTMaxMatrixColumnsMPI::RunImpl() {
 
   for (int local_idx = 0; local_idx < num_local_cols; ++local_idx) {
     int global_col = start_col + local_idx;
-    int max_val = input_matrix_[global_col]; 
+    int max_val = input_matrix_[global_col];
 
     for (std::size_t row = 1; row < rows_; ++row) {
       std::size_t index = row * cols_ + global_col;
@@ -79,9 +84,8 @@ bool ChernovTMaxMatrixColumnsMPI::RunImpl() {
     all_local_maxes.resize(cols_);
   }
 
-  MPI_Gatherv(local_maxes.data(), num_local_cols, MPI_INT,
-              all_local_maxes.data(), recvcounts.data(), displs.data(), MPI_INT,
-              0, MPI_COMM_WORLD);
+  MPI_Gatherv(local_maxes.data(), num_local_cols, MPI_INT, all_local_maxes.data(), recvcounts.data(), displs.data(),
+              MPI_INT, 0, MPI_COMM_WORLD);
 
   if (rank == 0) {
     std::vector<int> final_result(cols_);
@@ -115,4 +119,4 @@ bool ChernovTMaxMatrixColumnsMPI::PostProcessingImpl() {
   return true;
 }
 
-}  // namespace chernov_t_max_matrix_columns 
+}  // namespace chernov_t_max_matrix_columns
