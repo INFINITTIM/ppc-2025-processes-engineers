@@ -21,8 +21,7 @@ class ChernovTMaxMatrixColumnsMPI : public BaseTask {
   bool RunImpl() override;
   bool PostProcessingImpl() override;
 
-  std::vector<int> CalculateLocalMaxes(int rank, int size, int cols_per_proc, int remainder);
-  std::pair<std::vector<int>, std::vector<int>> PrepareGatherArrays(int size, int cols_per_proc, int remainder);
+  std::tuple<std::vector<int>, int, int> CalculateLocalMaxes(int rank, int cols_per_proc, int remainder);
 
   std::size_t rows_ = 0;
   std::size_t cols_ = 0;

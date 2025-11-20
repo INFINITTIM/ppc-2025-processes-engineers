@@ -50,19 +50,28 @@ bool ChernovTMaxMatrixColumnsMPI::RunImpl() {
   auto cols_per_proc = static_cast<int>(cols_ / size);
   auto remainder = static_cast<int>(cols_ % size);
 
-  // Вынесли только подготовку массивов для Gatherv
-  auto [recvcounts, displs] = PrepareGatherArrays(size, cols_per_proc, remainder);
+  auto [local_maxes, start_col, num_local_cols] = CalculateLocalMaxes(rank, cols_per_proc, remainder);
 
-  // Вынесли вычисление локальных максимумов
-  std::vector<int> local_maxes = CalculateLocalMaxes(rank, size, cols_per_proc, remainder);
+  std::vector<int> recvcounts(size);
+  std::vector<int> displs(size);
+
+  for (int process = 0; process < size; ++process) {
+    int p_cols = cols_per_proc + (process < remainder ? 1 : 0);
+    recvcounts[process] = p_cols;
+  }
+
+  displs[0] = 0;
+  for (int process = 1; process < size; ++process) {
+    displs[process] = displs[process - 1] + recvcounts[process - 1];
+  }
 
   std::vector<int> all_local_maxes;
   if (rank == 0) {
     all_local_maxes.resize(cols_);
   }
 
-  MPI_Gatherv(local_maxes.data(), static_cast<int>(local_maxes.size()), MPI_INT, all_local_maxes.data(),
-              recvcounts.data(), displs.data(), MPI_INT, 0, MPI_COMM_WORLD);
+  MPI_Gatherv(local_maxes.data(), num_local_cols, MPI_INT, all_local_maxes.data(), recvcounts.data(), displs.data(),
+              MPI_INT, 0, MPI_COMM_WORLD);
 
   if (rank == 0) {
     std::vector<int> final_result(cols_);
@@ -76,10 +85,9 @@ bool ChernovTMaxMatrixColumnsMPI::RunImpl() {
     GetOutput() = final_result;
   }
 
-  // Оставили broadcast в основной функции
   int output_size = 0;
   if (rank == 0) {
-    output_size = static_cast<int>(GetOutput().size());  // Исправили narrowing
+    output_size = static_cast<int>(GetOutput().size());
   }
   MPI_Bcast(&output_size, 1, MPI_INT, 0, MPI_COMM_WORLD);
 
@@ -92,9 +100,8 @@ bool ChernovTMaxMatrixColumnsMPI::RunImpl() {
   return true;
 }
 
-// Только 2 вспомогательные функции
-std::vector<int> ChernovTMaxMatrixColumnsMPI::CalculateLocalMaxes(int rank, int size, int cols_per_proc,
-                                                                  int remainder) {
+std::tuple<std::vector<int>, int, int> ChernovTMaxMatrixColumnsMPI::CalculateLocalMaxes(int rank, int cols_per_proc,
+                                                                                        int remainder) {
   int start_col = (rank * cols_per_proc) + std::min(rank, remainder);
   int num_local_cols = cols_per_proc + (rank < remainder ? 1 : 0);
 
@@ -111,26 +118,7 @@ std::vector<int> ChernovTMaxMatrixColumnsMPI::CalculateLocalMaxes(int rank, int 
     local_maxes[local_idx] = max_val;
   }
 
-  return local_maxes;
-}
-
-std::pair<std::vector<int>, std::vector<int>> ChernovTMaxMatrixColumnsMPI::PrepareGatherArrays(int size,
-                                                                                               int cols_per_proc,
-                                                                                               int remainder) {
-  std::vector<int> recvcounts(size);
-  std::vector<int> displs(size);
-
-  for (int process = 0; process < size; ++process) {
-    int p_cols = cols_per_proc + (process < remainder ? 1 : 0);
-    recvcounts[process] = p_cols;
-  }
-
-  displs[0] = 0;
-  for (int process = 1; process < size; ++process) {
-    displs[process] = displs[process - 1] + recvcounts[process - 1];
-  }
-
-  return {recvcounts, displs};
+  return {local_maxes, start_col, num_local_cols};
 }
 
 bool ChernovTMaxMatrixColumnsMPI::PostProcessingImpl() {
