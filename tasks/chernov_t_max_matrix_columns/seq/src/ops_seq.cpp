@@ -47,7 +47,9 @@ bool ChernovTMaxMatrixColumnsSEQ::RunImpl() {
 
     for (std::size_t row = 1; row < rows_; ++row) {
       std::size_t index = (row * cols_) + col;
-      max_val = std::max(input_matrix_[index], max_val);
+      if (input_matrix_[index] > max_val) {
+        max_val = input_matrix_[index];
+      }
     }
     result[col] = max_val;
   }
@@ -58,7 +60,7 @@ bool ChernovTMaxMatrixColumnsSEQ::RunImpl() {
 
 bool ChernovTMaxMatrixColumnsSEQ::PostProcessingImpl() {
   input_matrix_.clear();
-  return !GetOutput().empty();
+  return true;
 }
 
 }  // namespace chernov_t_max_matrix_columns
