@@ -37,16 +37,7 @@ bool ChernovTMaxMatrixColumnsMPI::PreProcessingImpl() {
   return true;
 }
 
-bool ChernovTMaxMatrixColumnsMPI::RunImpl() {
-  if (!valid_) {
-    return false;
-  }
-
-  int rank = 0;
-  int size = 0;
-  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-  MPI_Comm_size(MPI_COMM_WORLD, &size);
-
+std::vector<int> ChernovTMaxMatrixColumnsMPI::CalculateLocalMaxes(int rank, int size) {
   auto cols_per_proc = static_cast<int>(cols_ / size);
   auto remainder = static_cast<int>(cols_ % size);
 
@@ -65,6 +56,12 @@ bool ChernovTMaxMatrixColumnsMPI::RunImpl() {
     }
     local_maxes[local_idx] = max_val;
   }
+  return local_maxes;
+}
+
+std::vector<int> ChernovTMaxMatrixColumnsMPI::GatherResults(const std::vector<int> &local_maxes, int rank, int size) {
+  auto cols_per_proc = static_cast<int>(cols_ / size);
+  auto remainder = static_cast<int>(cols_ % size);
 
   std::vector<int> recvcounts(size);
   std::vector<int> displs(size);
@@ -84,32 +81,82 @@ bool ChernovTMaxMatrixColumnsMPI::RunImpl() {
     all_local_maxes.resize(cols_);
   }
 
-  MPI_Gatherv(local_maxes.data(), num_local_cols, MPI_INT, all_local_maxes.data(), recvcounts.data(), displs.data(),
-              MPI_INT, 0, MPI_COMM_WORLD);
+  MPI_Gatherv(local_maxes.data(), static_cast<int>(local_maxes.size()), MPI_INT, all_local_maxes.data(),
+              recvcounts.data(), displs.data(), MPI_INT, 0, MPI_COMM_WORLD);
 
-  if (rank == 0) {
-    std::vector<int> final_result(cols_);
-    for (int process = 0; process < size; ++process) {
-      int p_cols = cols_per_proc + (process < remainder ? 1 : 0);
-      int p_start_col = (process * cols_per_proc) + std::min(process, remainder);
-      for (int j = 0; j < p_cols; ++j) {
-        final_result[p_start_col + j] = all_local_maxes[displs[process] + j];
-      }
+  return all_local_maxes;
+}
+
+std::vector<int> ChernovTMaxMatrixColumnsMPI::AssembleFinalResult(const std::vector<int> &all_local_maxes, int size) {
+  auto cols_per_proc = static_cast<int>(cols_ / size);
+  auto remainder = static_cast<int>(cols_ % size);
+
+  std::vector<int> final_result(cols_);
+  for (int process = 0; process < size; ++process) {
+    int p_cols = cols_per_proc + (process < remainder ? 1 : 0);
+    int p_start_col = (process * cols_per_proc) + std::min(process, remainder);
+    std::vector<int>::size_type displ = 0;
+    if (process > 0) {
+      displ = static_cast<std::vector<int>::size_type>(p_start_col);
     }
-    GetOutput() = final_result;
+    for (int j = 0; j < p_cols; ++j) {
+      final_result[p_start_col + j] = all_local_maxes[displ + j];
+    }
   }
+  return final_result;
+}
 
-  int output_size = 0;
+void ChernovTMaxMatrixColumnsMPI::BroadcastResult(const std::vector<int> &final_result, int rank, int size) {
+  size_t temp_output_size = 0;
   if (rank == 0) {
-    output_size = GetOutput().size();
+    temp_output_size = final_result.size();
   }
-  MPI_Bcast(&output_size, 1, MPI_INT, 0, MPI_COMM_WORLD);
+  MPI_Bcast(&temp_output_size, 1, MPI_UNSIGNED_LONG, 0, MPI_COMM_WORLD);
 
-  if (rank != 0) {
-    GetOutput().resize(output_size);
+  output_size_ = temp_output_size;
+
+  std::vector<int> temp_output;
+  if (rank == 0) {
+    temp_output = final_result;
+  } else {
+    temp_output.resize(output_size_);
+  }
+  MPI_Bcast(temp_output.data(), static_cast<int>(output_size_), MPI_INT, 0, MPI_COMM_WORLD);
+
+  GetOutput() = temp_output;
+}
+
+bool ChernovTMaxMatrixColumnsMPI::RunImpl() {
+  if (!valid_) {
+    return false;
   }
 
-  MPI_Bcast(GetOutput().data(), output_size, MPI_INT, 0, MPI_COMM_WORLD);
+  int rank = 0;
+  int size = 0;
+  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+  MPI_Comm_size(MPI_COMM_WORLD, &size);
+
+  std::vector<int> local_maxes = CalculateLocalMaxes(rank, size);
+  if (local_maxes.empty() && size > 1 && rank != 0) {
+    if (size == 1) {
+      return false;
+    }
+  }
+
+  std::vector<int> all_local_maxes = GatherResults(local_maxes, rank, size);
+  if (rank == 0 && all_local_maxes.size() != cols_) {
+    return false;
+  }
+
+  std::vector<int> final_result;
+  if (rank == 0) {
+    final_result = AssembleFinalResult(all_local_maxes, size);
+    if (final_result.size() != cols_) {
+      return false;
+    }
+  }
+
+  BroadcastResult(final_result, rank, size);
 
   return true;
 }

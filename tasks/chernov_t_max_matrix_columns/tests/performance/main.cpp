@@ -1,7 +1,6 @@
 #include <gtest/gtest.h>
 
 #include <cstddef>
-#include <random>
 #include <tuple>
 #include <vector>
 
@@ -23,8 +22,8 @@ class ChernovTPerfTest : public ppc::util::BaseRunPerfTests<InType, OutType> {
 
     for (std::size_t i = 0; i < kRows_; ++i) {
       for (std::size_t j = 0; j < kCols_; ++j) {
-        int value = static_cast<int>((i * 13 + j * 29) % 1000 + 1);
-        matrix_data[i * kCols_ + j] = value;
+        int value = static_cast<int>(((i * 13 + j * 29) % 1000) + 1);
+        matrix_data[(i * kCols_) + j] = value;
       }
     }
     input_data_ = std::make_tuple(kRows_, kCols_, matrix_data);
