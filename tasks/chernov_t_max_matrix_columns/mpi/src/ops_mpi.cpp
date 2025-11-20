@@ -128,13 +128,16 @@ void ChernovTMaxMatrixColumnsMPI::BroadcastResult(const std::vector<int> &final_
     output_size = static_cast<int>(final_result.size());
     GetOutput() = final_result;
   }
+
   MPI_Bcast(&output_size, 1, MPI_INT, 0, MPI_COMM_WORLD);
 
   if (rank != 0) {
     GetOutput().resize(output_size);
   }
 
-  MPI_Bcast(GetOutput().data(), output_size, MPI_INT, 0, MPI_COMM_WORLD);
+  if (output_size > 0) {
+    MPI_Bcast(GetOutput().data(), output_size, MPI_INT, 0, MPI_COMM_WORLD);
+  }
 }
 
 bool ChernovTMaxMatrixColumnsMPI::PostProcessingImpl() {
