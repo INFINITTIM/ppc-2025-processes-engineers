@@ -63,4 +63,4 @@ bool ChernovTMaxMatrixColumnsSEQ::PostProcessingImpl() {
   return true;
 }
 
-} // namespace chernov_t_max_matrix_columns
+}  // namespace chernov_t_max_matrix_columns
