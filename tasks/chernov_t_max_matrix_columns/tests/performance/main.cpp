@@ -20,7 +20,7 @@ class ChernovTPerfTest : public ppc::util::BaseRunPerfTests<InType, OutType> {
 
   void SetUp() override {
     std::vector<int> matrix_data(kRows_ * kCols_);
-  
+
     for (std::size_t i = 0; i < kRows_; ++i) {
       for (std::size_t j = 0; j < kCols_; ++j) {
         int value = static_cast<int>((i * 13 + j * 29) % 1000 + 1);

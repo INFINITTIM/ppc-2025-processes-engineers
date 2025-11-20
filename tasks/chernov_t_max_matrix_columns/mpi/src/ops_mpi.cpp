@@ -49,9 +49,9 @@ bool ChernovTMaxMatrixColumnsMPI::RunImpl() {
 
   std::vector<int> local_maxes = CalculateLocalMaxes(rank, size);
   std::vector<int> final_result = GatherResults(local_maxes, rank, size);
-  
+
   BroadcastResult(final_result, rank);
-  
+
   return true;
 }
 
@@ -78,7 +78,7 @@ std::vector<int> ChernovTMaxMatrixColumnsMPI::CalculateLocalMaxes(int rank, int 
   return local_maxes;
 }
 
-std::vector<int> ChernovTMaxMatrixColumnsMPI::GatherResults(const std::vector<int>& local_maxes, int rank, int size) {
+std::vector<int> ChernovTMaxMatrixColumnsMPI::GatherResults(const std::vector<int> &local_maxes, int rank, int size) {
   auto cols_per_proc = static_cast<int>(cols_ / size);
   auto remainder = static_cast<int>(cols_ % size);
 
@@ -100,8 +100,7 @@ std::vector<int> ChernovTMaxMatrixColumnsMPI::GatherResults(const std::vector<in
     all_local_maxes.resize(cols_);
   }
 
-  MPI_Gatherv(local_maxes.data(), local_maxes.size(), MPI_INT, 
-              all_local_maxes.data(), recvcounts.data(), displs.data(),
+  MPI_Gatherv(local_maxes.data(), local_maxes.size(), MPI_INT, all_local_maxes.data(), recvcounts.data(), displs.data(),
               MPI_INT, 0, MPI_COMM_WORLD);
 
   std::vector<int> final_result;
@@ -119,7 +118,7 @@ std::vector<int> ChernovTMaxMatrixColumnsMPI::GatherResults(const std::vector<in
   return final_result;
 }
 
-void ChernovTMaxMatrixColumnsMPI::BroadcastResult(const std::vector<int>& final_result, int rank) {
+void ChernovTMaxMatrixColumnsMPI::BroadcastResult(const std::vector<int> &final_result, int rank) {
   int output_size = 0;
   if (rank == 0) {
     output_size = static_cast<int>(final_result.size());
