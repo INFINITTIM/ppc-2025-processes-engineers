@@ -50,20 +50,11 @@ bool ChernovTMaxMatrixColumnsMPI::RunImpl() {
   auto cols_per_proc = static_cast<int>(cols_ / size);
   auto remainder = static_cast<int>(cols_ % size);
 
+  // Вынесли расчет локальных максимумов
   auto [local_maxes, start_col, num_local_cols] = CalculateLocalMaxes(rank, cols_per_proc, remainder);
 
-  std::vector<int> recvcounts(size);
-  std::vector<int> displs(size);
-
-  for (int process = 0; process < size; ++process) {
-    int p_cols = cols_per_proc + (process < remainder ? 1 : 0);
-    recvcounts[process] = p_cols;
-  }
-
-  displs[0] = 0;
-  for (int process = 1; process < size; ++process) {
-    displs[process] = displs[process - 1] + recvcounts[process - 1];
-  }
+  // Вынесли подготовку массивов для Gatherv
+  auto [recvcounts, displs] = PrepareGatherArrays(size, cols_per_proc, remainder);
 
   std::vector<int> all_local_maxes;
   if (rank == 0) {
@@ -73,29 +64,13 @@ bool ChernovTMaxMatrixColumnsMPI::RunImpl() {
   MPI_Gatherv(local_maxes.data(), num_local_cols, MPI_INT, all_local_maxes.data(), recvcounts.data(), displs.data(),
               MPI_INT, 0, MPI_COMM_WORLD);
 
+  // Вынесли финальную обработку результатов
   if (rank == 0) {
-    std::vector<int> final_result(cols_);
-    for (int process = 0; process < size; ++process) {
-      int p_cols = cols_per_proc + (process < remainder ? 1 : 0);
-      int p_start_col = (process * cols_per_proc) + std::min(process, remainder);
-      for (int j = 0; j < p_cols; ++j) {
-        final_result[p_start_col + j] = all_local_maxes[displs[process] + j];
-      }
-    }
-    GetOutput() = final_result;
+    ProcessFinalResults(all_local_maxes, size, cols_per_proc, remainder, displs);
   }
 
-  int output_size = 0;
-  if (rank == 0) {
-    output_size = static_cast<int>(GetOutput().size());
-  }
-  MPI_Bcast(&output_size, 1, MPI_INT, 0, MPI_COMM_WORLD);
-
-  if (rank != 0) {
-    GetOutput().resize(output_size);
-  }
-
-  MPI_Bcast(GetOutput().data(), output_size, MPI_INT, 0, MPI_COMM_WORLD);
+  // Оставшийся broadcast
+  BroadcastResults(rank);
 
   return true;
 }
@@ -119,6 +94,54 @@ std::tuple<std::vector<int>, int, int> ChernovTMaxMatrixColumnsMPI::CalculateLoc
   }
 
   return {local_maxes, start_col, num_local_cols};
+}
+
+std::pair<std::vector<int>, std::vector<int>> ChernovTMaxMatrixColumnsMPI::PrepareGatherArrays(int size,
+                                                                                               int cols_per_proc,
+                                                                                               int remainder) {
+  std::vector<int> recvcounts(size);
+  std::vector<int> displs(size);
+
+  for (int process = 0; process < size; ++process) {
+    int p_cols = cols_per_proc + (process < remainder ? 1 : 0);
+    recvcounts[process] = p_cols;
+  }
+
+  displs[0] = 0;
+  for (int process = 1; process < size; ++process) {
+    displs[process] = displs[process - 1] + recvcounts[process - 1];
+  }
+
+  return {recvcounts, displs};
+}
+
+void ChernovTMaxMatrixColumnsMPI::ProcessFinalResults(const std::vector<int> &all_local_maxes, int size,
+                                                      int cols_per_proc, int remainder,
+                                                      const std::vector<int> &displs) {
+  std::vector<int> final_result(cols_);
+  for (int process = 0; process < size; ++process) {
+    int p_cols = cols_per_proc + (process < remainder ? 1 : 0);
+    int p_start_col = (process * cols_per_proc) + std::min(process, remainder);
+    for (int j = 0; j < p_cols; ++j) {
+      final_result[p_start_col + j] = all_local_maxes[displs[process] + j];
+    }
+  }
+  GetOutput() = final_result;
+}
+
+void ChernovTMaxMatrixColumnsMPI::BroadcastResults(int rank) {
+  int output_size = 0;
+  if (rank == 0) {
+    output_size = static_cast<int>(GetOutput().size());
+  }
+
+  MPI_Bcast(&output_size, 1, MPI_INT, 0, MPI_COMM_WORLD);
+
+  if (rank != 0) {
+    GetOutput().resize(output_size);
+  }
+
+  MPI_Bcast(GetOutput().data(), output_size, MPI_INT, 0, MPI_COMM_WORLD);
 }
 
 bool ChernovTMaxMatrixColumnsMPI::PostProcessingImpl() {
