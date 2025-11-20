@@ -90,9 +90,11 @@ std::vector<int> ChernovTMaxMatrixColumnsMPI::GatherResults(const std::vector<in
     recvcounts[process] = p_cols;
   }
 
-  displs[0] = 0;
-  for (int process = 1; process < size; ++process) {
-    displs[process] = displs[process - 1] + recvcounts[process - 1];
+  if (!displs.empty()) {
+    displs[0] = 0;
+    for (int process = 1; process < size; ++process) {
+      displs[process] = displs[process - 1] + recvcounts[process - 1];
+    }
   }
 
   std::vector<int> all_local_maxes;
@@ -100,8 +102,10 @@ std::vector<int> ChernovTMaxMatrixColumnsMPI::GatherResults(const std::vector<in
     all_local_maxes.resize(cols_);
   }
 
-  MPI_Gatherv(local_maxes.data(), local_maxes.size(), MPI_INT, all_local_maxes.data(), recvcounts.data(), displs.data(),
-              MPI_INT, 0, MPI_COMM_WORLD);
+  if (size > 0) {
+    MPI_Gatherv(local_maxes.data(), local_maxes.size(), MPI_INT, all_local_maxes.data(), recvcounts.data(),
+                displs.data(), MPI_INT, 0, MPI_COMM_WORLD);
+  }
 
   std::vector<int> final_result;
   if (rank == 0) {
