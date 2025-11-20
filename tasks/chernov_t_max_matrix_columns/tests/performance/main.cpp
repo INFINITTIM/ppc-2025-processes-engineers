@@ -13,7 +13,7 @@
 namespace chernov_t_max_matrix_columns {
 
 class ChernovTPerfTest : public ppc::util::BaseRunPerfTests<InType, OutType> {
- private:
+private:
   const std::size_t kRows_ = 4000;
   const std::size_t kCols_ = 4000;
   InType input_data_{};
@@ -32,23 +32,21 @@ class ChernovTPerfTest : public ppc::util::BaseRunPerfTests<InType, OutType> {
     return !output_data.empty() && (output_data.size() == kCols_);
   }
 
-  InType GetTestInputData() final {
-    return input_data_;
-  }
+  InType GetTestInputData() final { return input_data_; }
 };
 
-TEST_P(ChernovTPerfTest, RunPerfModes) {
-  ExecuteTest(GetParam());
-}
+TEST_P(ChernovTPerfTest, RunPerfModes) { ExecuteTest(GetParam()); }
 
 const auto kAllPerfTasks =
-    ppc::util::MakeAllPerfTasks<InType, ChernovTMaxMatrixColumnsMPI, ChernovTMaxMatrixColumnsSEQ>(
+    ppc::util::MakeAllPerfTasks<InType, ChernovTMaxMatrixColumnsMPI,
+                                ChernovTMaxMatrixColumnsSEQ>(
         PPC_SETTINGS_chernov_t_max_matrix_columns);
 
 const auto kGtestValues = ppc::util::TupleToGTestValues(kAllPerfTasks);
 
 const auto kPerfTestName = ChernovTPerfTest::CustomPerfTestName;
 
-INSTANTIATE_TEST_SUITE_P(ChernovTPerfTests, ChernovTPerfTest, kGtestValues, kPerfTestName);
+INSTANTIATE_TEST_SUITE_P(ChernovTPerfTests, ChernovTPerfTest, kGtestValues,
+                         kPerfTestName);
 
-}  // namespace chernov_t_max_matrix_columns
+} // namespace chernov_t_max_matrix_columns

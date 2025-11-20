@@ -86,8 +86,9 @@ bool ChernovTMaxMatrixColumnsMPI::RunImpl() {
     all_local_maxes.resize(cols_);
   }
 
-  MPI_Gatherv(local_maxes.data(), num_local_cols, MPI_INT, all_local_maxes.data(), recvcounts.data(), displs.data(),
-              MPI_INT, 0, MPI_COMM_WORLD);
+  MPI_Gatherv(local_maxes.data(), num_local_cols, MPI_INT,
+              all_local_maxes.data(), recvcounts.data(), displs.data(), MPI_INT,
+              0, MPI_COMM_WORLD);
 
   if (rank == 0) {
     std::vector<int> final_result(cols_);
@@ -121,4 +122,4 @@ bool ChernovTMaxMatrixColumnsMPI::PostProcessingImpl() {
   return true;
 }
 
-}  // namespace chernov_t_max_matrix_columns
+} // namespace chernov_t_max_matrix_columns
