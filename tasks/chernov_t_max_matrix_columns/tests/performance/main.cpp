@@ -16,14 +16,16 @@ class ChernovTPerfTest : public ppc::util::BaseRunPerfTests<InType, OutType> {
  private:
   const std::size_t kRows_ = 4000;
   const std::size_t kCols_ = 4000;
-  InType input_data_{};
+  InType input_data_;
 
   void SetUp() override {
     std::vector<int> matrix_data(kRows_ * kCols_);
-    std::mt19937 gen(42);
-    std::uniform_int_distribution<int> dist(1, 1000);
-    for (std::size_t i = 0; i < matrix_data.size(); ++i) {
-      matrix_data[i] = dist(gen);
+  
+    for (std::size_t i = 0; i < kRows_; ++i) {
+      for (std::size_t j = 0; j < kCols_; ++j) {
+        int value = static_cast<int>((i * 13 + j * 29) % 1000 + 1);
+        matrix_data[i * kCols_ + j] = value;
+      }
     }
     input_data_ = std::make_tuple(kRows_, kCols_, matrix_data);
   }
