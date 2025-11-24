@@ -2,6 +2,7 @@
 
 #include <mpi.h>
 
+#include <algorithm>
 #include <array>
 #include <cstddef>
 #include <limits>
@@ -60,7 +61,7 @@ bool ChernovTMaxMatrixColumnsMPI::RunImpl() {
 }
 
 void ChernovTMaxMatrixColumnsMPI::BroadcastDimensions(int rank) {
-  std::array<int, 2> dimensions;
+  std::array<int, 2> dimensions{};
   if (rank == 0) {
     dimensions[0] = static_cast<int>(rows_);
     dimensions[1] = static_cast<int>(cols_);
@@ -89,9 +90,7 @@ std::vector<int> ChernovTMaxMatrixColumnsMPI::ComputeLocalMaxima(int rank, int s
 
     for (int row = 1; row < total_rows_; ++row) {
       const int element = matrix_data[(row * total_cols_) + col];
-      if (element > max_val) {
-        max_val = element;
-      }
+      max_val = std::max(element, max_val);
     }
     local_maxima[col] = max_val;
   }
