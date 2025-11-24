@@ -23,7 +23,7 @@ class ChernovTMaxMatrixColumnsMPI : public BaseTask {
 
   void BroadcastDimensions(int rank);
   std::vector<int> BroadcastMatrixData(int rank);
-  std::vector<int> ComputeLocalMaxima(int rank, int size, const std::vector<int> &matrix_data);
+  std::vector<int> ComputeLocalMaxima(int rank, int size, const std::vector<int> &matrix_data) const;
   void ComputeAndBroadcastResult(const std::vector<int> &local_maxima);
 
   std::size_t rows_ = 0;

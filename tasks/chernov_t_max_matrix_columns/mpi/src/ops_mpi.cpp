@@ -2,7 +2,7 @@
 
 #include <mpi.h>
 
-#include <algorithm>
+#include <array>
 #include <cstddef>
 #include <limits>
 #include <vector>
@@ -41,7 +41,8 @@ bool ChernovTMaxMatrixColumnsMPI::PreProcessingImpl() {
 }
 
 bool ChernovTMaxMatrixColumnsMPI::RunImpl() {
-  int rank, size;
+  int rank = 0;
+  int size = 0;
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
   MPI_Comm_size(MPI_COMM_WORLD, &size);
 
@@ -59,34 +60,35 @@ bool ChernovTMaxMatrixColumnsMPI::RunImpl() {
 }
 
 void ChernovTMaxMatrixColumnsMPI::BroadcastDimensions(int rank) {
-  int dimensions[2];
+  std::array<int, 2> dimensions;
   if (rank == 0) {
     dimensions[0] = static_cast<int>(rows_);
     dimensions[1] = static_cast<int>(cols_);
   }
-  MPI_Bcast(dimensions, 2, MPI_INT, 0, MPI_COMM_WORLD);
+  MPI_Bcast(dimensions.data(), 2, MPI_INT, 0, MPI_COMM_WORLD);
   total_rows_ = dimensions[0];
   total_cols_ = dimensions[1];
 }
 
 std::vector<int> ChernovTMaxMatrixColumnsMPI::BroadcastMatrixData(int rank) {
-  std::vector<int> matrix_data(total_rows_ * total_cols_);
+  const auto total_size = static_cast<std::size_t>(total_rows_) * static_cast<std::size_t>(total_cols_);
+  std::vector<int> matrix_data(total_size);
   if (rank == 0) {
     matrix_data = input_matrix_;
   }
-  MPI_Bcast(matrix_data.data(), total_rows_ * total_cols_, MPI_INT, 0, MPI_COMM_WORLD);
+  MPI_Bcast(matrix_data.data(), static_cast<int>(total_size), MPI_INT, 0, MPI_COMM_WORLD);
   return matrix_data;
 }
 
 std::vector<int> ChernovTMaxMatrixColumnsMPI::ComputeLocalMaxima(int rank, int size,
-                                                                 const std::vector<int> &matrix_data) {
+                                                                 const std::vector<int> &matrix_data) const {
   std::vector<int> local_maxima(total_cols_, std::numeric_limits<int>::min());
 
   for (int col = rank; col < total_cols_; col += size) {
     int max_val = matrix_data[col];
 
     for (int row = 1; row < total_rows_; ++row) {
-      int element = matrix_data[row * total_cols_ + col];
+      const int element = matrix_data[(row * total_cols_) + col];
       if (element > max_val) {
         max_val = element;
       }
