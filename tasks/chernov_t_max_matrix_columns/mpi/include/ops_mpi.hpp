@@ -21,10 +21,17 @@ class ChernovTMaxMatrixColumnsMPI : public BaseTask {
   bool RunImpl() override;
   bool PostProcessingImpl() override;
 
+  void BroadcastDimensions(int rank);
+  std::vector<int> BroadcastMatrixData(int rank);
+  std::vector<int> ComputeLocalMaxima(int rank, int size, const std::vector<int> &matrix_data);
+  void ComputeAndBroadcastResult(const std::vector<int> &local_maxima);
+
   std::size_t rows_ = 0;
   std::size_t cols_ = 0;
   std::vector<int> input_matrix_;
   bool valid_ = false;
+  int total_rows_ = 0;
+  int total_cols_ = 0;
 };
 
 }  // namespace chernov_t_max_matrix_columns

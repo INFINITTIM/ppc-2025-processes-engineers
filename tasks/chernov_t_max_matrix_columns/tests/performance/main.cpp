@@ -1,5 +1,4 @@
 #include <gtest/gtest.h>
-#include <mpi.h>
 
 #include <cstddef>
 #include <tuple>
@@ -14,8 +13,8 @@ namespace chernov_t_max_matrix_columns {
 
 class ChernovTPerfTest : public ppc::util::BaseRunPerfTests<InType, OutType> {
  private:
-  const std::size_t kRows_ = 4000;
-  const std::size_t kCols_ = 4000;
+  const std::size_t kRows_ = 5000;
+  const std::size_t kCols_ = 5000;
   InType input_data_;
 
   void SetUp() override {
@@ -31,15 +30,7 @@ class ChernovTPerfTest : public ppc::util::BaseRunPerfTests<InType, OutType> {
   }
 
   bool CheckTestOutputData(OutType &output_data) final {
-    int rank;  // ← ОБЪЯВИ ПЕРЕМЕННУЮ!
-    MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-
-    if (rank != 0 && output_data.empty()) {
-      return true;  // MPI процесс кроме rank 0 с пустым результатом - ОК
-    }
-
-    // Все остальные случаи: результат должен быть непустым и правильного размера
-    return !output_data.empty() && (output_data.size() == kCols_);
+    return !output_data.empty() && output_data.size() == kCols_;
   }
 
   InType GetTestInputData() final {
