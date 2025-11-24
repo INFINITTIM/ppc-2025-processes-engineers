@@ -1,7 +1,6 @@
 #pragma once
 
 #include <cstddef>
-#include <tuple>
 #include <vector>
 
 #include "chernov_t_max_matrix_columns/common/include/common.hpp"
@@ -21,12 +20,6 @@ class ChernovTMaxMatrixColumnsMPI : public BaseTask {
   bool PreProcessingImpl() override;
   bool RunImpl() override;
   bool PostProcessingImpl() override;
-
-  std::tuple<std::vector<int>, int, int> CalculateLocalMaxes(int rank, int cols_per_proc, int remainder);
-  std::pair<std::vector<int>, std::vector<int>> PrepareGatherArrays(int size, int cols_per_proc, int remainder);
-  void ProcessFinalResults(const std::vector<int> &all_local_maxes, int size, int cols_per_proc, int remainder,
-                           const std::vector<int> &displs);
-  void BroadcastResults(int rank);
 
   std::size_t rows_ = 0;
   std::size_t cols_ = 0;

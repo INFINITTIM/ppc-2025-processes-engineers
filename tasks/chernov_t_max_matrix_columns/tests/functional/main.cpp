@@ -1,4 +1,5 @@
 #include <gtest/gtest.h>
+#include <mpi.h>
 
 #include <array>
 #include <cstddef>
@@ -29,6 +30,15 @@ class ChernovTFuncTestsProcesses : public ppc::util::BaseRunFuncTests<InType, Ou
   }
 
   bool CheckTestOutputData(OutType &output_data) final {
+    int rank;
+    MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+
+    // Для MPI процессов кроме rank 0 - результат должен быть пустым
+    if (rank != 0 && output_data.empty()) {
+      return true;  // Это нормально для MPI процессов кроме rank 0
+    }
+
+    // Для rank 0 (MPI) и всех процессов (SEQ) - проверяем корректность результата
     auto expected =
         std::get<2>(std::get<static_cast<std::size_t>(ppc::util::GTestParamIndex::kTestParams)>(GetParam()));
 
