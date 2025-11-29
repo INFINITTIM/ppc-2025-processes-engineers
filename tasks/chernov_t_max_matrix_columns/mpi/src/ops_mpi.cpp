@@ -29,14 +29,19 @@ bool ChernovTMaxMatrixColumnsMPI::ValidationImpl() {
 }
 
 bool ChernovTMaxMatrixColumnsMPI::PreProcessingImpl() {
+  int rank = 0;
+  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+
   if (!valid_) {
     return false;
   }
 
-  auto &input = GetInput();
-  rows_ = std::get<0>(input);
-  cols_ = std::get<1>(input);
-  input_matrix_ = std::get<2>(input);
+  if (rank == 0) {
+    auto &input = GetInput();
+    rows_ = std::get<0>(input);
+    cols_ = std::get<1>(input);
+    input_matrix_ = std::get<2>(input);
+  }
 
   return true;
 }

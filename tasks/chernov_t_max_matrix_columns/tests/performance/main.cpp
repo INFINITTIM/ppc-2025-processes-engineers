@@ -13,8 +13,8 @@ namespace chernov_t_max_matrix_columns {
 
 class ChernovTPerfTest : public ppc::util::BaseRunPerfTests<InType, OutType> {
  private:
-  const std::size_t kRows_ = 5000;
-  const std::size_t kCols_ = 5000;
+  const std::size_t kRows_ = 7000;
+  const std::size_t kCols_ = 7000;
   InType input_data_;
 
   void SetUp() override {
