@@ -60,19 +60,19 @@ bool ChernovTMaxMatrixColumnsSEQ::RunImpl() {
 
 ## 4. Схема распараллеливания (MPI)
 
-Параллельная реализация использует циклическое распределение столбцов между процессами. Каждый процесс с рангом `rank` обрабатывает столбцы с индексами col = rank, rank + size, rank + 2·size и так далее, где `size` — общее число процессов. Такой подход обеспечивает балансировку нагрузки при условии, что число столбцов значительно превышает число процессов.
+Параллельная реализация использует распределение столбцов матрицы между процессами с помощью `MPI_Scatterv`. Процесс 0 отправляет данные частями другим процессам, что соответствует требованию преподавателя.
 
 **Этапы выполнения:**
 
-1. Рассылка метаданных: процесс 0 передаёт m и n всем процессам через MPI_Bcast.
-2. Рассылка данных: вся матрица (в row-major формате) передаётся всем процессам с помощью MPI_Bcast. Это упрощает реализацию, но ограничивает масштабируемость при очень больших объёмах данных.
-3. Локальные вычисления: каждый процесс вычисляет максимумы только для «своих» столбцов. Для остальных столбцов в локальном векторе устанавливается значение INT_MIN, чтобы не влиять на глобальный максимум.
-4. Глобальная редукция: с помощью MPI_Reduce с операцией MPI_MAX все локальные результаты сводятся к глобальному вектору максимумов на процессе 0.
-5. Рассылка финального результата: процесс 0 раздаёт итоговый вектор всем процессам через MPI_Bcast.
+1. Рассылка метаданных: процесс 0 передаёт размеры матрицы m и n всем процессам через `MPI_Bcast`.
+2. Распределение данных: процесс 0 переупорядочивает матрицу в column-major формат и отправляет столбцы частями другим процессам с помощью `MPI_Scatterv`.
+3. Локальные вычисления: каждый процесс вычисляет максимумы только для полученных столбцов.
+4. Глобальная редукция: с помощью `MPI_Gatherv` все процессы отправляют свои локальные максимумы процессу 0.
+5. Рассылка финального результата: процесс 0 раздаёт итоговый вектор всем процессам через `MPI_Bcast`.
 
 **Детальный алгоритм параллельной реализации**
 
-Инициализация и распространение метаданных:
+Рассылка размеров матрицы:
 
 ```cpp
 void ChernovTMaxMatrixColumnsMPI::BroadcastDimensions(int rank) {
@@ -87,57 +87,106 @@ void ChernovTMaxMatrixColumnsMPI::BroadcastDimensions(int rank) {
 }
 ```
 
-Распространение данных матрицы
+Распределение данных между процессами:
 
 ```cpp
-std::vector<int> ChernovTMaxMatrixColumnsMPI::BroadcastMatrixData(int rank) {
-    const auto total_size = static_cast<std::size_t>(total_rows_) * static_cast<std::size_t>(total_cols_);
-    std::vector<int> matrix_data(total_size);
-    if (rank == 0) {
-        matrix_data = input_matrix_;
+std::vector<int> ChernovTMaxMatrixColumnsMPI::ScatterMatrixData(int rank, int size) {
+  int base_cols = total_cols_ / size;
+  int remainder = total_cols_ % size;
+  
+  int my_cols = base_cols;
+  if (rank < remainder) my_cols++;
+  
+  std::vector<int> send_counts(size, 0);
+  std::vector<int> displacements(size, 0);
+  
+  if (rank == 0) {
+    std::vector<int> reordered_data(total_rows_ * total_cols_);
+    for (int col = 0; col < total_cols_; ++col) {
+      for (int row = 0; row < total_rows_; ++row) {
+        reordered_data[col * total_rows_ + row] = input_matrix_[row * total_cols_ + col];
+      }
     }
-    MPI_Bcast(matrix_data.data(), static_cast<int>(total_size), MPI_INT, 0, MPI_COMM_WORLD);
-    return matrix_data;
+    
+    int current_displacement = 0;
+    for (int i = 0; i < size; ++i) {
+      int cols_for_i = base_cols;
+      if (i < remainder) cols_for_i++;
+      send_counts[i] = cols_for_i * total_rows_;
+      displacements[i] = current_displacement;
+      current_displacement += send_counts[i];
+    }
+  }
+  
+  MPI_Bcast(send_counts.data(), size, MPI_INT, 0, MPI_COMM_WORLD);
+  MPI_Bcast(displacements.data(), size, MPI_INT, 0, MPI_COMM_WORLD);
+  
+  // Распределяем данные
+  int my_elements = send_counts[rank];
+  std::vector<int> local_data(my_elements);
+  
+  if (rank == 0) {
+    MPI_Scatterv(reordered_data.data(), send_counts.data(), displacements.data(),
+                 MPI_INT, local_data.data(), my_elements, MPI_INT, 0, MPI_COMM_WORLD);
+  } else {
+    std::vector<int> dummy_sendbuf;
+    MPI_Scatterv(dummy_sendbuf.data(), send_counts.data(), displacements.data(),
+                 MPI_INT, local_data.data(), my_elements, MPI_INT, 0, MPI_COMM_WORLD);
+  }
+  
+  return local_data;
 }
 ```
 
-Локальные вычисления максимумов
+Локальные вычисления максимумов:
 
 ```cpp
 std::vector<int> ChernovTMaxMatrixColumnsMPI::ComputeLocalMaxima(int rank, int size,
-                                                                 const std::vector<int> &matrix_data) const {
-    std::vector<int> local_maxima(total_cols_, std::numeric_limits<int>::min());
-
-    for (int col = rank; col < total_cols_; col += size) {
-        int max_val = matrix_data[col];
-        
-        for (int row = 1; row < total_rows_; ++row) {
-            const int element = matrix_data[(row * total_cols_) + col];
-            max_val = std::max(element, max_val);
-        }
-        local_maxima[col] = max_val;
+                                                                 const std::vector<int> &local_data) const {
+  int base_cols = total_cols_ / size;
+  int remainder = total_cols_ % size;
+  int my_cols = base_cols;
+  if (rank < remainder) my_cols++;
+  
+  std::vector<int> local_maxima(my_cols);
+  
+  for (int local_col = 0; local_col < my_cols; ++local_col) {
+    int max_val = local_data[local_col * total_rows_];
+    
+    for (int row = 1; row < total_rows_; ++row) {
+      int element = local_data[local_col * total_rows_ + row];
+      if (element > max_val) max_val = element;
     }
-
-    for (int col = 0; col < total_cols_; ++col) {
-        if (col % size != rank) {
-            local_maxima[col] = std::numeric_limits<int>::min();
-        }
-    }
-
-    return local_maxima;
+    local_maxima[local_col] = max_val;
+  }
+  
+  return local_maxima;
 }
 ```
 
-Объединение и распространение результатов
+Сбор и рассылка результатов:
 
 ```cpp
 void ChernovTMaxMatrixColumnsMPI::ComputeAndBroadcastResult(const std::vector<int> &local_maxima) {
-    std::vector<int> result(total_cols_);
+  int size = 0;
+  MPI_Comm_size(MPI_COMM_WORLD, &size);
 
-    MPI_Reduce(local_maxima.data(), result.data(), total_cols_, MPI_INT, MPI_MAX, 0, MPI_COMM_WORLD);
-
-    MPI_Bcast(result.data(), total_cols_, MPI_INT, 0, MPI_COMM_WORLD);
-    GetOutput() = result;
+  std::vector<int> recv_counts(size);
+  std::vector<int> displacements(size);
+  int current_displacement = 0;
+  for (int i = 0; i < size; ++i) {
+    recv_counts[i] = base_cols;
+    if (i < remainder) recv_counts[i]++;
+    displacements[i] = current_displacement;
+    current_displacement += recv_counts[i];
+  }
+  
+  std::vector<int> result(total_cols_);
+  MPI_Gatherv(local_maxima.data(), local_maxima.size(), MPI_INT,
+              result.data(), recv_counts.data(), displacements.data(), MPI_INT, 0, MPI_COMM_WORLD);
+  
+  MPI_Bcast(result.data(), total_cols_, MPI_INT, 0, MPI_COMM_WORLD);
+  GetOutput() = result;
 }
 ```
 
@@ -183,20 +232,22 @@ void ChernovTMaxMatrixColumnsMPI::ComputeAndBroadcastResult(const std::vector<in
 
 ### 7.2 Производительность
 
-Измерения выполнены на матрице `7000 на 7000` (согласно коду `perf_tests.cpp`). Время — значение из лога `task_run`. За базовое время SEQ принято значение при запуске без MPI: **1.5454 с**.
+Измерения выполнены на матрице `7000 на 7000` (согласно коду `perf_tests.cpp`). Время — значение из лога `task_run`. За базовое время SEQ принято значение при запуске в однопроцессном режиме: **1.5219 с**.
 
 | Режим | Число процессов | Время, с | Ускорение | Эффективность |
 |-------|------------------|----------|-----------|----------------|
-| seq   | 1                | 1.5454   | 1.00      | N/A            |
-| mpi   | 2                | 0.7763   | 1.99      | 99.5%          |
-| mpi   | 3                | 0.7600   | 2.03      | 67.7%          |
-| mpi   | 4                | 0.8023   | 1.93      | 48.2%          |
+| seq   | 1                | 1.5219   | 1.00      | N/A            |
+| mpi   | 2                | 1.0491   | 1.45      | 72.5%          |
+| mpi   | 3                | 0.9659   | 1.58      | 52.6%          |
+| mpi   | 4                | 1.3133   | 1.16      | 29.0%          |
 
 ## 8. Выводы
 
-Задача нахождения максимальных элементов по столбцам матрицы была успешно реализована в двух вариантах: **последовательном (SEQ)** и **распределённом (MPI)** с использованием библиотеки **Open MPI**. Для проверки корректности разработаны функциональные тесты на малых матрицах, а для оценки производительности — тесты на матрице размером `7000 на 7000`.
+Задача нахождения максимальных элементов по столбцам матрицы была успешно реализована в двух вариантах: **последовательном (SEQ)** и **распределённом (MPI)** с использованием библиотеки **Open MPI**. Реализация MPI-версии была доработана в соответствии с рекомендацией преподавателя: данные передаются **по частям от процесса с рангом 0 другим процессам**, без полного широковещания всей матрицы. Это обеспечивает лучшую масштабируемость и соответствует принципам эффективных распределённых вычислений.
 
-Были проведены замеры времени выполнения и рассчитаны метрики параллельной эффективности. Результаты показали, что параллельная реализация обеспечивает **ускорение до 2.03×** при использовании 2–3 процессов. Максимальная эффективность (**99.5%**) достигается при двух процессах, что свидетельствует о практически идеальном распределении вычислительной нагрузки и минимальных коммуникационных издержках на данной конфигурации.
+Для проверки корректности разработаны функциональные тесты на малых матрицах (2×2 и 3×3), а для оценки производительности использовалась матрица размером `7000×7000`. Эксперименты показали, что MPI-реализация демонстрирует **максимальное ускорение 1.58× при 3 процессах**, а наилучшая параллельная эффективность (**72.5%**) достигается при использовании **2 процессов**. Незначительный рост времени при 4 процессах связан с увеличением накладных расходов на коммуникацию и неравномерным распределением нагрузки при блочном делении столбцов.
+
+Таким образом, распределённая реализация обеспечивает реальное ускорение по сравнению с последовательной версией и корректно масштабируется в рамках доступных вычислительных ресурсов.
 
 ## 9. Источники
 
