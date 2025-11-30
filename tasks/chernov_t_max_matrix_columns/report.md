@@ -93,47 +93,54 @@ void ChernovTMaxMatrixColumnsMPI::BroadcastDimensions(int rank) {
 std::vector<int> ChernovTMaxMatrixColumnsMPI::ScatterMatrixData(int rank, int size) {
   int base_cols = total_cols_ / size;
   int remainder = total_cols_ % size;
-  
+
   int my_cols = base_cols;
-  if (rank < remainder) my_cols++;
-  
+  if (rank < remainder) {
+    my_cols++;
+  }
+
+  int my_elements = my_cols * total_rows_;
+  std::vector<int> local_data(my_elements);
+
   std::vector<int> send_counts(size, 0);
   std::vector<int> displacements(size, 0);
-  
+  std::vector<int> reordered_data;
+
   if (rank == 0) {
-    std::vector<int> reordered_data(total_rows_ * total_cols_);
+    reordered_data.resize(static_cast<std::size_t>(total_rows_) * static_cast<std::size_t>(total_cols_));
     for (int col = 0; col < total_cols_; ++col) {
       for (int row = 0; row < total_rows_; ++row) {
-        reordered_data[col * total_rows_ + row] = input_matrix_[row * total_cols_ + col];
+        reordered_data[(static_cast<std::size_t>(col) * static_cast<std::size_t>(total_rows_)) +
+                       static_cast<std::size_t>(row)] =
+            input_matrix_[(static_cast<std::size_t>(row) * static_cast<std::size_t>(total_cols_)) +
+                          static_cast<std::size_t>(col)];
       }
     }
-    
+
     int current_displacement = 0;
     for (int i = 0; i < size; ++i) {
       int cols_for_i = base_cols;
-      if (i < remainder) cols_for_i++;
+      if (i < remainder) {
+        cols_for_i++;
+      }
       send_counts[i] = cols_for_i * total_rows_;
       displacements[i] = current_displacement;
       current_displacement += send_counts[i];
     }
   }
-  
+
   MPI_Bcast(send_counts.data(), size, MPI_INT, 0, MPI_COMM_WORLD);
   MPI_Bcast(displacements.data(), size, MPI_INT, 0, MPI_COMM_WORLD);
-  
-  // Распределяем данные
-  int my_elements = send_counts[rank];
-  std::vector<int> local_data(my_elements);
-  
+
   if (rank == 0) {
-    MPI_Scatterv(reordered_data.data(), send_counts.data(), displacements.data(),
-                 MPI_INT, local_data.data(), my_elements, MPI_INT, 0, MPI_COMM_WORLD);
+    MPI_Scatterv(reordered_data.data(), send_counts.data(), displacements.data(), MPI_INT, local_data.data(),
+                 my_elements, MPI_INT, 0, MPI_COMM_WORLD);
   } else {
     std::vector<int> dummy_sendbuf;
-    MPI_Scatterv(dummy_sendbuf.data(), send_counts.data(), displacements.data(),
-                 MPI_INT, local_data.data(), my_elements, MPI_INT, 0, MPI_COMM_WORLD);
+    MPI_Scatterv(dummy_sendbuf.data(), send_counts.data(), displacements.data(), MPI_INT, local_data.data(),
+                 my_elements, MPI_INT, 0, MPI_COMM_WORLD);
   }
-  
+
   return local_data;
 }
 ```
@@ -145,21 +152,25 @@ std::vector<int> ChernovTMaxMatrixColumnsMPI::ComputeLocalMaxima(int rank, int s
                                                                  const std::vector<int> &local_data) const {
   int base_cols = total_cols_ / size;
   int remainder = total_cols_ % size;
+
   int my_cols = base_cols;
-  if (rank < remainder) my_cols++;
-  
+  if (rank < remainder) {
+    my_cols++;
+  }
+
   std::vector<int> local_maxima(my_cols);
-  
+
   for (int local_col = 0; local_col < my_cols; ++local_col) {
-    int max_val = local_data[local_col * total_rows_];
-    
+    int max_val = local_data[(static_cast<std::size_t>(local_col) * static_cast<std::size_t>(total_rows_))];
+
     for (int row = 1; row < total_rows_; ++row) {
-      int element = local_data[local_col * total_rows_ + row];
-      if (element > max_val) max_val = element;
+      int element = local_data[(static_cast<std::size_t>(local_col) * static_cast<std::size_t>(total_rows_)) +
+                               static_cast<std::size_t>(row)];
+      max_val = std::max(element, max_val);
     }
     local_maxima[local_col] = max_val;
   }
-  
+
   return local_maxima;
 }
 ```
@@ -171,20 +182,27 @@ void ChernovTMaxMatrixColumnsMPI::ComputeAndBroadcastResult(const std::vector<in
   int size = 0;
   MPI_Comm_size(MPI_COMM_WORLD, &size);
 
+  int base_cols = total_cols_ / size;
+  int remainder = total_cols_ % size;
+
   std::vector<int> recv_counts(size);
   std::vector<int> displacements(size);
+
   int current_displacement = 0;
   for (int i = 0; i < size; ++i) {
     recv_counts[i] = base_cols;
-    if (i < remainder) recv_counts[i]++;
+    if (i < remainder) {
+      recv_counts[i]++;
+    }
     displacements[i] = current_displacement;
     current_displacement += recv_counts[i];
   }
-  
+
   std::vector<int> result(total_cols_);
-  MPI_Gatherv(local_maxima.data(), local_maxima.size(), MPI_INT,
-              result.data(), recv_counts.data(), displacements.data(), MPI_INT, 0, MPI_COMM_WORLD);
-  
+
+  MPI_Gatherv(local_maxima.data(), static_cast<int>(local_maxima.size()), MPI_INT, result.data(), recv_counts.data(),
+              displacements.data(), MPI_INT, 0, MPI_COMM_WORLD);
+
   MPI_Bcast(result.data(), total_cols_, MPI_INT, 0, MPI_COMM_WORLD);
   GetOutput() = result;
 }
