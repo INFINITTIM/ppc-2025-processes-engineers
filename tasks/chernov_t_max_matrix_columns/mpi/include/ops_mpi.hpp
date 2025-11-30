@@ -23,7 +23,7 @@ class ChernovTMaxMatrixColumnsMPI : public BaseTask {
 
   void BroadcastDimensions(int rank);
   std::vector<int> ScatterMatrixData(int rank, int size);
-  [[nodiscard]] std::vector<int> ComputeLocalMaxima(int rank, int size, const std::vector<int> &matrix_data) const;
+  [[nodiscard]] std::vector<int> ComputeLocalMaxima(int rank, int size, const std::vector<int> &local_data) const;
   void ComputeAndBroadcastResult(const std::vector<int> &local_maxima);
 
   std::size_t rows_ = 0;

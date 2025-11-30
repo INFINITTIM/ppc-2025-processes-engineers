@@ -5,7 +5,6 @@
 #include <algorithm>
 #include <array>
 #include <cstddef>
-#include <limits>
 #include <vector>
 
 #include "chernov_t_max_matrix_columns/common/include/common.hpp"
@@ -93,10 +92,13 @@ std::vector<int> ChernovTMaxMatrixColumnsMPI::ScatterMatrixData(int rank, int si
   std::vector<int> reordered_data;
 
   if (rank == 0) {
-    reordered_data.resize(total_rows_ * total_cols_);
+    reordered_data.resize(static_cast<std::size_t>(total_rows_) * static_cast<std::size_t>(total_cols_));
     for (int col = 0; col < total_cols_; ++col) {
       for (int row = 0; row < total_rows_; ++row) {
-        reordered_data[col * total_rows_ + row] = input_matrix_[row * total_cols_ + col];
+        reordered_data[static_cast<std::size_t>(col) * static_cast<std::size_t>(total_rows_) +
+                       static_cast<std::size_t>(row)] =
+            input_matrix_[static_cast<std::size_t>(row) * static_cast<std::size_t>(total_cols_) +
+                          static_cast<std::size_t>(col)];
       }
     }
 
@@ -140,13 +142,12 @@ std::vector<int> ChernovTMaxMatrixColumnsMPI::ComputeLocalMaxima(int rank, int s
   std::vector<int> local_maxima(my_cols);
 
   for (int local_col = 0; local_col < my_cols; ++local_col) {
-    int max_val = local_data[local_col * total_rows_];
+    int max_val = local_data[static_cast<std::size_t>(local_col) * static_cast<std::size_t>(total_rows_)];
 
     for (int row = 1; row < total_rows_; ++row) {
-      int element = local_data[local_col * total_rows_ + row];
-      if (element > max_val) {
-        max_val = element;
-      }
+      int element = local_data[static_cast<std::size_t>(local_col) * static_cast<std::size_t>(total_rows_) +
+                               static_cast<std::size_t>(row)];
+      max_val = std::max(element, max_val);
     }
     local_maxima[local_col] = max_val;
   }
@@ -176,7 +177,7 @@ void ChernovTMaxMatrixColumnsMPI::ComputeAndBroadcastResult(const std::vector<in
 
   std::vector<int> result(total_cols_);
 
-  MPI_Gatherv(local_maxima.data(), local_maxima.size(), MPI_INT, result.data(), recv_counts.data(),
+  MPI_Gatherv(local_maxima.data(), static_cast<int>(local_maxima.size()), MPI_INT, result.data(), recv_counts.data(),
               displacements.data(), MPI_INT, 0, MPI_COMM_WORLD);
 
   MPI_Bcast(result.data(), total_cols_, MPI_INT, 0, MPI_COMM_WORLD);
