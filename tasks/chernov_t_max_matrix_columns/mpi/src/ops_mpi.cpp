@@ -95,9 +95,9 @@ std::vector<int> ChernovTMaxMatrixColumnsMPI::ScatterMatrixData(int rank, int si
     reordered_data.resize(static_cast<std::size_t>(total_rows_) * static_cast<std::size_t>(total_cols_));
     for (int col = 0; col < total_cols_; ++col) {
       for (int row = 0; row < total_rows_; ++row) {
-        reordered_data[static_cast<std::size_t>(col) * static_cast<std::size_t>(total_rows_) +
+        reordered_data[(static_cast<std::size_t>(col) * static_cast<std::size_t>(total_rows_)) +
                        static_cast<std::size_t>(row)] =
-            input_matrix_[static_cast<std::size_t>(row) * static_cast<std::size_t>(total_cols_) +
+            input_matrix_[(static_cast<std::size_t>(row) * static_cast<std::size_t>(total_cols_)) +
                           static_cast<std::size_t>(col)];
       }
     }
@@ -142,10 +142,10 @@ std::vector<int> ChernovTMaxMatrixColumnsMPI::ComputeLocalMaxima(int rank, int s
   std::vector<int> local_maxima(my_cols);
 
   for (int local_col = 0; local_col < my_cols; ++local_col) {
-    int max_val = local_data[static_cast<std::size_t>(local_col) * static_cast<std::size_t>(total_rows_)];
+    int max_val = local_data[(static_cast<std::size_t>(local_col) * static_cast<std::size_t>(total_rows_))];
 
     for (int row = 1; row < total_rows_; ++row) {
-      int element = local_data[static_cast<std::size_t>(local_col) * static_cast<std::size_t>(total_rows_) +
+      int element = local_data[(static_cast<std::size_t>(local_col) * static_cast<std::size_t>(total_rows_)) +
                                static_cast<std::size_t>(row)];
       max_val = std::max(element, max_val);
     }
