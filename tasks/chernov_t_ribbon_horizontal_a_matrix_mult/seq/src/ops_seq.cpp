@@ -11,50 +11,77 @@ namespace chernov_t_ribbon_horizontal_a_matrix_mult {
 ChernovTRibbonHorizontalAMmatrixMultSEQ::ChernovTRibbonHorizontalAMmatrixMultSEQ(const InType &in) {
   SetTypeOfTask(GetStaticTypeOfTask());
   GetInput() = in;
-  GetOutput() = 0;
+  GetOutput() = std::vector<int>();
 }
 
 bool ChernovTRibbonHorizontalAMmatrixMultSEQ::ValidationImpl() {
-  return (GetInput() > 0) && (GetOutput() == 0);
-}
+  const auto& input = GetInput();
 
-bool ChernovTRibbonHorizontalAMmatrixMultSEQ::PreProcessingImpl() {
-  GetOutput() = 2 * GetInput();
-  return GetOutput() > 0;
-}
+  int rowsA = std::get<0>(input);
+  int colsA = std::get<1>(input);
+  const auto& matrixA = std::get<2>(input);
+  
+  int rowsB = std::get<3>(input);
+  int colsB = std::get<4>(input);
+  const auto& matrixB = std::get<5>(input);
 
-bool ChernovTRibbonHorizontalAMmatrixMultSEQ::RunImpl() {
-  if (GetInput() == 0) {
+  if (colsA != rowsB) {
     return false;
   }
 
-  for (InType i = 0; i < GetInput(); i++) {
-    for (InType j = 0; j < GetInput(); j++) {
-      for (InType k = 0; k < GetInput(); k++) {
-        std::vector<InType> tmp(i + j + k, 1);
-        GetOutput() += std::accumulate(tmp.begin(), tmp.end(), 0);
-        GetOutput() -= i + j + k;
+  if (matrixA.size() != static_cast<size_t>(rowsA * colsA)) {
+    return false;
+  }
+
+  if (matrixB.size() != static_cast<size_t>(rowsB * colsB)) {
+    return false;
+  }
+
+  if (rowsA <= 0 || colsA <= 0 || rowsB <= 0 || colsB <= 0) {
+    return false;
+  }
+  
+  return true;
+}
+
+bool ChernovTRibbonHorizontalAMmatrixMultSEQ::PreProcessingImpl() {
+  const auto& input = GetInput();
+  int rowsA = std::get<0>(input);
+  int colsB = std::get<4>(input);
+  
+  GetOutput() = std::vector<int>(rowsA * colsB, 0);
+  return true;
+}
+
+bool ChernovTRibbonHorizontalAMmatrixMultSEQ::RunImpl() {
+  const auto& input = GetInput();
+
+  int rowsA = std::get<0>(input);  
+  int colsA = std::get<1>(input); 
+  const auto& matrixA = std::get<2>(input);
+  
+  int rowsB = std::get<3>(input); 
+  int colsB = std::get<4>(input);  
+  const auto& matrixB = std::get<5>(input);
+
+  auto& output = GetOutput();
+  
+  for (int i = 0; i < rowsA; i++) {
+    for (int j = 0; j < colsB; j++) {
+      int sum = 0;
+      for (int k = 0; k < colsA; k++) {
+
+        sum += matrixA[i * colsA + k] * matrixB[k * colsB + j];
       }
+      output[i * colsB + j] = sum;
     }
   }
-
-  const int num_threads = ppc::util::GetNumThreads();
-  GetOutput() *= num_threads;
-
-  int counter = 0;
-  for (int i = 0; i < num_threads; i++) {
-    counter++;
-  }
-
-  if (counter != 0) {
-    GetOutput() /= counter;
-  }
-  return GetOutput() > 0;
+  
+  return true;
 }
 
 bool ChernovTRibbonHorizontalAMmatrixMultSEQ::PostProcessingImpl() {
-  GetOutput() -= GetInput();
-  return GetOutput() > 0;
+  return !GetOutput().empty();
 }
 
 }  // namespace chernov_t_ribbon_horizontal_a_matrix_mult
