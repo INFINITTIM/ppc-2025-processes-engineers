@@ -17,6 +17,22 @@ class ChernovTRibbonHorizontalAMmatrixMultMPI : public BaseTask {
   bool PreProcessingImpl() override;
   bool RunImpl() override;
   bool PostProcessingImpl() override;
+
+  void BroadcastMatrixSizes(int rank);
+  void BroadcastMatrixB(int rank);
+  std::vector<int> ScatterMatrixA(int rank, int size);
+  std::vector<int> ComputeLocalC(int rank, int local_rows, const std::vector<int>& localA);
+  void GatherResult(int rank, int size, int local_rows, const std::vector<int>& localC);
+
+  int rowsA_ = 0, colsA_ = 0; 
+  int rowsB_ = 0, colsB_ = 0; 
+  std::vector<int> matrixA_;
+  std::vector<int> matrixB_; 
+
+  int global_rowsA_ = 0, global_colsA_ = 0;
+  int global_rowsB_ = 0, global_colsB_ = 0;
+  
+  bool valid_ = false;
 };
 
 }  // namespace chernov_t_ribbon_horizontal_a_matrix_mult
