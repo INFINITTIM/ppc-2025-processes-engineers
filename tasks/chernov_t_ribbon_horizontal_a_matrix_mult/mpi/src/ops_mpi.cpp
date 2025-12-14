@@ -6,6 +6,8 @@
 #include <cstddef>
 #include <vector>
 
+#include "chernov_t_ribbon_horizontal_a_matrix_mult/common/include/common.hpp"
+
 namespace chernov_t_ribbon_horizontal_a_matrix_mult {
 
 ChernovTRibbonHorizontalAMmatrixMultMPI::ChernovTRibbonHorizontalAMmatrixMultMPI(const InType &in) {
@@ -56,7 +58,8 @@ bool ChernovTRibbonHorizontalAMmatrixMultMPI::PreProcessingImpl() {
 }
 
 bool ChernovTRibbonHorizontalAMmatrixMultMPI::RunImpl() {
-  int rank = 0, size = 0;
+  int rank = 0;
+  int size = 0;
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
   MPI_Comm_size(MPI_COMM_WORLD, &size);
 
@@ -83,7 +86,7 @@ bool ChernovTRibbonHorizontalAMmatrixMultMPI::RunImpl() {
 }
 
 void ChernovTRibbonHorizontalAMmatrixMultMPI::BroadcastMatrixSizes(int rank) {
-  std::array<int, 4> sizes;
+  std::array<int, 4> sizes{};
   if (rank == 0) {
     sizes[0] = rowsA_;
     sizes[1] = colsA_;

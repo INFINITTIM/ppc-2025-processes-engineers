@@ -1,5 +1,6 @@
 #include "chernov_t_ribbon_horizontal_a_matrix_mult/seq/include/ops_seq.hpp"
 
+#include <cstddef>
 #include <vector>
 
 #include "chernov_t_ribbon_horizontal_a_matrix_mult/common/include/common.hpp"
