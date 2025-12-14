@@ -1,5 +1,6 @@
 #pragma once
 
+#include <vector>
 #include "chernov_t_ribbon_horizontal_a_matrix_mult/common/include/common.hpp"
 #include "task/include/task.hpp"
 
@@ -21,8 +22,8 @@ class ChernovTRibbonHorizontalAMmatrixMultMPI : public BaseTask {
   void BroadcastMatrixSizes(int rank);
   void BroadcastMatrixB(int rank);
   std::vector<int> ScatterMatrixA(int rank, int size);
-  std::vector<int> ComputeLocalC(int local_rows, const std::vector<int> &localA);
-  void GatherResult(int rank, int size, const std::vector<int> &localC);
+  std::vector<int> ComputeLocalC(int local_rows, const std::vector<int> &local_a);
+  void GatherResult(int rank, int size, const std::vector<int> &local_c);
 
   int rowsA_ = 0, colsA_ = 0;
   int rowsB_ = 0, colsB_ = 0;

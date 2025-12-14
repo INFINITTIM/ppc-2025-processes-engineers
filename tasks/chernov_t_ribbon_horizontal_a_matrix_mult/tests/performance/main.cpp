@@ -17,19 +17,19 @@ class ChernovTPerfTest : public ppc::util::BaseRunPerfTests<InType, OutType> {
   InType input_data_;
 
   void SetUp() override {
-    std::vector<int> matrixA(kSize_ * kSize_);
-    std::vector<int> matrixB(kSize_ * kSize_);
+    std::vector<int> matrix_a(kSize_ * kSize_);
+    std::vector<int> matrix_b(kSize_ * kSize_);
 
     for (std::size_t i = 0; i < kSize_; ++i) {
       for (std::size_t j = 0; j < kSize_; ++j) {
         int value = static_cast<int>(((i * 13 + j * 29) % 100) + 1);
-        matrixA[(i * kSize_) + j] = value;
-        matrixB[(i * kSize_) + j] = static_cast<int>(((i * 17 + j * 31) % 100) + 1);
+        matrix_a[(i * kSize_) + j] = value;
+        matrix_b[(i * kSize_) + j] = static_cast<int>(((i * 17 + j * 31) % 100) + 1);
       }
     }
 
-    input_data_ = std::make_tuple(static_cast<int>(kSize_), static_cast<int>(kSize_), matrixA, static_cast<int>(kSize_),
-                                  static_cast<int>(kSize_), matrixB);
+    input_data_ = std::make_tuple(static_cast<int>(kSize_), static_cast<int>(kSize_), matrix_a, static_cast<int>(kSize_),
+                                  static_cast<int>(kSize_), matrix_b);
   }
 
   bool CheckTestOutputData(OutType &output_data) final {

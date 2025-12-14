@@ -2,9 +2,9 @@
 
 #include <mpi.h>
 
-#include <algorithm>
 #include <cstddef>
 #include <vector>
+#include <array>
 
 namespace chernov_t_ribbon_horizontal_a_matrix_mult {
 
@@ -17,23 +17,24 @@ ChernovTRibbonHorizontalAMmatrixMultMPI::ChernovTRibbonHorizontalAMmatrixMultMPI
 bool ChernovTRibbonHorizontalAMmatrixMultMPI::ValidationImpl() {
   const auto &input = GetInput();
 
-  int rowsA = std::get<0>(input);
-  int colsA = std::get<1>(input);
-  const auto &vecA = std::get<2>(input);
+  int rows_a = std::get<0>(input);
+  int cols_a = std::get<1>(input);
+  const auto &vec_a = std::get<2>(input);
 
-  int rowsB = std::get<3>(input);
-  int colsB = std::get<4>(input);
-  const auto &vecB = std::get<5>(input);
+  int rows_b = std::get<3>(input);
+  int cols_b = std::get<4>(input);
+  const auto &vec_b = std::get<5>(input);
 
-  valid_ = (colsA == rowsB) && (vecA.size() == static_cast<size_t>(rowsA * colsA)) &&
-           (vecB.size() == static_cast<size_t>(rowsB * colsB)) && (rowsA > 0) && (colsA > 0) && (rowsB > 0) &&
-           (colsB > 0);
+ valid_ = (cols_a == rows_b) &&
+           (vec_a.size() == static_cast<size_t>(rows_a) * static_cast<size_t>(cols_a)) &&
+           (vec_b.size() == static_cast<size_t>(rows_b) * static_cast<size_t>(cols_b)) &&
+           (rows_a > 0) && (cols_a > 0) && (rows_b > 0) && (cols_b > 0);
 
   return valid_;
 }
 
 bool ChernovTRibbonHorizontalAMmatrixMultMPI::PreProcessingImpl() {
-  int rank;
+  int rank = 0;
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 
   if (!valid_) {
@@ -56,7 +57,7 @@ bool ChernovTRibbonHorizontalAMmatrixMultMPI::PreProcessingImpl() {
 }
 
 bool ChernovTRibbonHorizontalAMmatrixMultMPI::RunImpl() {
-  int rank, size;
+  int rank = 0, size = 0;
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
   MPI_Comm_size(MPI_COMM_WORLD, &size);
 
@@ -69,22 +70,21 @@ bool ChernovTRibbonHorizontalAMmatrixMultMPI::RunImpl() {
 
   BroadcastMatrixB(rank);
 
-  std::vector<int> localA = ScatterMatrixA(rank, size);
+  std::vector<int> local_a = ScatterMatrixA(rank, size);
 
   int base_rows = global_rowsA_ / size;
   int remainder = global_rowsA_ % size;
   int local_rows = base_rows + (rank < remainder ? 1 : 0);
 
-  std::vector<int> localC = ComputeLocalC(local_rows, localA);
+  std::vector<int> local_c = ComputeLocalC(local_rows, local_a);
 
-  GatherResult(rank, size, localC);
+  GatherResult(rank, size, local_c);
 
   return true;
 }
 
 void ChernovTRibbonHorizontalAMmatrixMultMPI::BroadcastMatrixSizes(int rank) {
-  int sizes[4];
-
+  std::array<int, 4> sizes;
   if (rank == 0) {
     sizes[0] = rowsA_;
     sizes[1] = colsA_;
@@ -92,8 +92,7 @@ void ChernovTRibbonHorizontalAMmatrixMultMPI::BroadcastMatrixSizes(int rank) {
     sizes[3] = colsB_;
   }
 
-  MPI_Bcast(sizes, 4, MPI_INT, 0, MPI_COMM_WORLD);
-
+  MPI_Bcast(sizes.data(), sizes.size(), MPI_INT, 0, MPI_COMM_WORLD);
   global_rowsA_ = sizes[0];
   global_colsA_ = sizes[1];
   global_rowsB_ = sizes[2];
@@ -102,9 +101,8 @@ void ChernovTRibbonHorizontalAMmatrixMultMPI::BroadcastMatrixSizes(int rank) {
 
 void ChernovTRibbonHorizontalAMmatrixMultMPI::BroadcastMatrixB(int rank) {
   if (rank != 0) {
-    matrixB_.resize(global_rowsB_ * global_colsB_);
+    matrixB_.resize(static_cast<size_t>(global_rowsB_) * static_cast<size_t>(global_colsB_));
   }
-
   MPI_Bcast(matrixB_.data(), global_rowsB_ * global_colsB_, MPI_INT, 0, MPI_COMM_WORLD);
 }
 
@@ -113,11 +111,9 @@ std::vector<int> ChernovTRibbonHorizontalAMmatrixMultMPI::ScatterMatrixA(int ran
   int remainder = global_rowsA_ % size;
 
   int local_rows = base_rows + (rank < remainder ? 1 : 0);
+  int local_elements = static_cast<int>(static_cast<size_t>(local_rows) * static_cast<size_t>(global_colsA_));
 
-  int local_elements = local_rows * global_colsA_;
-
-  std::vector<int> localA(local_elements);
-
+  std::vector<int> local_a(local_elements);
   std::vector<int> sendcounts(size);
   std::vector<int> displacements(size);
 
@@ -138,36 +134,34 @@ std::vector<int> ChernovTRibbonHorizontalAMmatrixMultMPI::ScatterMatrixA(int ran
   MPI_Bcast(recvcounts.data(), size, MPI_INT, 0, MPI_COMM_WORLD);
 
   MPI_Scatterv(rank == 0 ? matrixA_.data() : nullptr, rank == 0 ? sendcounts.data() : nullptr,
-               rank == 0 ? displacements.data() : nullptr, MPI_INT, localA.data(), local_elements, MPI_INT, 0,
+               rank == 0 ? displacements.data() : nullptr, MPI_INT, local_a.data(), local_elements, MPI_INT, 0,
                MPI_COMM_WORLD);
 
-  return localA;
+  return local_a;
 }
 
 std::vector<int> ChernovTRibbonHorizontalAMmatrixMultMPI::ComputeLocalC(int local_rows,
-                                                                        const std::vector<int> &localA) {
-  std::vector<int> localC(local_rows * global_colsB_, 0);
-
+                                                                        const std::vector<int> &local_a) {
+  std::vector<int> local_c(static_cast<size_t>(local_rows) * static_cast<size_t>(global_colsB_), 0);
   for (int i = 0; i < local_rows; i++) {
     for (int j = 0; j < global_colsB_; j++) {
       int sum = 0;
       for (int k = 0; k < global_colsA_; k++) {
-        sum += localA[i * global_colsA_ + k] * matrixB_[k * global_colsB_ + j];
+        sum += local_a[(i * global_colsA_) + k] * matrixB_[(k * global_colsB_) + j];
       }
-      localC[i * global_colsB_ + j] = sum;
+      local_c[(i * global_colsB_) + j] = sum;
     }
   }
-
-  return localC;
+  return local_c;
 }
 
-void ChernovTRibbonHorizontalAMmatrixMultMPI::GatherResult(int rank, int size, const std::vector<int> &localC) {
+void ChernovTRibbonHorizontalAMmatrixMultMPI::GatherResult(int rank, int size, const std::vector<int> &local_c) {
   int base_rows = global_rowsA_ / size;
   int remainder = global_rowsA_ % size;
 
   std::vector<int> recvcounts(size);
   std::vector<int> displacements(size);
-
+  
   if (rank == 0) {
     int offset = 0;
     for (int i = 0; i < size; i++) {
@@ -177,13 +171,11 @@ void ChernovTRibbonHorizontalAMmatrixMultMPI::GatherResult(int rank, int size, c
       offset += recvcounts[i];
     }
   }
-
   MPI_Bcast(recvcounts.data(), size, MPI_INT, 0, MPI_COMM_WORLD);
   MPI_Bcast(displacements.data(), size, MPI_INT, 0, MPI_COMM_WORLD);
 
-  std::vector<int> result(global_rowsA_ * global_colsB_);
-
-  MPI_Gatherv(localC.data(), static_cast<int>(localC.size()), MPI_INT, result.data(), recvcounts.data(),
+  std::vector<int> result(static_cast<size_t>(global_rowsA_) * static_cast<size_t>(global_colsB_));
+  MPI_Gatherv(local_c.data(), static_cast<int>(local_c.size()), MPI_INT, result.data(), recvcounts.data(),
               displacements.data(), MPI_INT, 0, MPI_COMM_WORLD);
 
   MPI_Bcast(result.data(), global_rowsA_ * global_colsB_, MPI_INT, 0, MPI_COMM_WORLD);

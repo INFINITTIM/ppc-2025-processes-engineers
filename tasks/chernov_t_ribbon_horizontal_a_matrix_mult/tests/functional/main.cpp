@@ -61,23 +61,24 @@ class ChernovTFuncTestsProcesses : public ppc::util::BaseRunFuncTests<InType, Ou
       throw std::runtime_error("Failed to open file: " + abs_path);
     }
 
-    int rowsA = 0, colsA = 0, rowsB = 0, colsB = 0;
-    file >> rowsA >> colsA >> rowsB >> colsB;
+    int rows_a = 0;
+    int cols_a = 0; 
+    int rows_b = 0;
+    int cols_b = 0;
+    file >> rows_a >> cols_a >> rows_b >> cols_b;
 
-    std::vector<int> matrixA(rowsA * colsA);
-    std::vector<int> matrixB(rowsB * colsB);
+    std::vector<int> matrix_a(static_cast<size_t>(rows_a) * static_cast<size_t>(cols_a));
+    std::vector<int> matrix_b(static_cast<size_t>(rows_b) * static_cast<size_t>(cols_b));
 
-    // Читаем матрицу A
-    for (int i = 0; i < rowsA * colsA; i++) {
-      file >> matrixA[i];
+    for (int i = 0; i < rows_a * cols_a; i++) {
+      file >> matrix_a[i];
     }
 
-    // Читаем матрицу B
-    for (int i = 0; i < rowsB * colsB; i++) {
-      file >> matrixB[i];
+    for (int i = 0; i < rows_b * cols_b; i++) {
+      file >> matrix_b[i];
     }
 
-    input_data_ = std::make_tuple(rowsA, colsA, matrixA, rowsB, colsB, matrixB);
+    input_data_ = std::make_tuple(rows_a, cols_a, matrix_a, rows_b, cols_b, matrix_b);
   }
 };
 

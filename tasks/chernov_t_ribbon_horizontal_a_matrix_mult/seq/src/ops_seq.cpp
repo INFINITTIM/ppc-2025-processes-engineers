@@ -1,10 +1,8 @@
 #include "chernov_t_ribbon_horizontal_a_matrix_mult/seq/include/ops_seq.hpp"
 
-#include <numeric>
 #include <vector>
 
 #include "chernov_t_ribbon_horizontal_a_matrix_mult/common/include/common.hpp"
-#include "util/include/util.hpp"
 
 namespace chernov_t_ribbon_horizontal_a_matrix_mult {
 
@@ -17,27 +15,27 @@ ChernovTRibbonHorizontalAMmatrixMultSEQ::ChernovTRibbonHorizontalAMmatrixMultSEQ
 bool ChernovTRibbonHorizontalAMmatrixMultSEQ::ValidationImpl() {
   const auto &input = GetInput();
 
-  int rowsA = std::get<0>(input);
-  int colsA = std::get<1>(input);
-  const auto &matrixA = std::get<2>(input);
+  int rows_a = std::get<0>(input);
+  int cols_a = std::get<1>(input);
+  const auto &matrix_a = std::get<2>(input);
 
-  int rowsB = std::get<3>(input);
-  int colsB = std::get<4>(input);
-  const auto &matrixB = std::get<5>(input);
+  int rows_b = std::get<3>(input);
+  int cols_b = std::get<4>(input);
+  const auto &matrix_b = std::get<5>(input);
 
-  if (colsA != rowsB) {
+  if (cols_a != rows_b) {
     return false;
   }
 
-  if (matrixA.size() != static_cast<size_t>(rowsA * colsA)) {
+  if (matrix_a.size() != static_cast<size_t>(rows_a) * static_cast<size_t>(cols_a)) {
     return false;
   }
 
-  if (matrixB.size() != static_cast<size_t>(rowsB * colsB)) {
+  if (matrix_b.size() != static_cast<size_t>(rows_b) * static_cast<size_t>(cols_b)) {
     return false;
   }
 
-  if (rowsA <= 0 || colsA <= 0 || rowsB <= 0 || colsB <= 0) {
+  if (rows_a <= 0 || cols_a <= 0 || rows_b <= 0 || cols_b <= 0) {
     return false;
   }
 
@@ -46,32 +44,32 @@ bool ChernovTRibbonHorizontalAMmatrixMultSEQ::ValidationImpl() {
 
 bool ChernovTRibbonHorizontalAMmatrixMultSEQ::PreProcessingImpl() {
   const auto &input = GetInput();
-  int rowsA = std::get<0>(input);
-  int colsB = std::get<4>(input);
+  int rows_a = std::get<0>(input);
+  int cols_b = std::get<4>(input);
 
-  GetOutput() = std::vector<int>(rowsA * colsB, 0);
+  GetOutput() = std::vector<int>(static_cast<size_t>(rows_a) * static_cast<size_t>(cols_b), 0);
   return true;
 }
 
 bool ChernovTRibbonHorizontalAMmatrixMultSEQ::RunImpl() {
   const auto &input = GetInput();
 
-  int rowsA = std::get<0>(input);
-  int colsA = std::get<1>(input);
-  const auto &matrixA = std::get<2>(input);
+  int rows_a = std::get<0>(input);
+  int cols_a = std::get<1>(input);
+  const auto &matrix_a = std::get<2>(input);
 
-  int colsB = std::get<4>(input);
-  const auto &matrixB = std::get<5>(input);
+  int cols_b = std::get<4>(input);
+  const auto &matrix_b = std::get<5>(input);
 
   auto &output = GetOutput();
 
-  for (int i = 0; i < rowsA; i++) {
-    for (int j = 0; j < colsB; j++) {
+  for (int i = 0; i < rows_a; i++) {
+    for (int j = 0; j < cols_b; j++) {
       int sum = 0;
-      for (int k = 0; k < colsA; k++) {
-        sum += matrixA[i * colsA + k] * matrixB[k * colsB + j];
+      for (int k = 0; k < cols_a; k++) {
+        sum += matrix_a[(i * cols_a) + k] * matrix_b[(k * cols_b) + j];
       }
-      output[i * colsB + j] = sum;
+      output[(i * cols_b) + j] = sum;
     }
   }
 
