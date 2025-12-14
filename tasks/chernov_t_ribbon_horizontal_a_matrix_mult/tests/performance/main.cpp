@@ -13,7 +13,7 @@ namespace chernov_t_ribbon_horizontal_a_matrix_mult {
 
 class ChernovTPerfTest : public ppc::util::BaseRunPerfTests<InType, OutType> {
  private:
-  const std::size_t kSize_ = 500;
+  const std::size_t kSize_ = 1100;
   InType input_data_;
 
   void SetUp() override {

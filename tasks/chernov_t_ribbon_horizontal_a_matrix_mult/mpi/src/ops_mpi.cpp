@@ -14,7 +14,7 @@ ChernovTRibbonHorizontalAMmatrixMultMPI::ChernovTRibbonHorizontalAMmatrixMultMPI
   GetOutput() = std::vector<int>();
 }
 
-bool ValidationImpl() override {
+bool ChernovTRibbonHorizontalAMmatrixMultMPI::ValidationImpl() {
   const auto& input = GetInput();
   
   int rowsA = std::get<0>(input);
@@ -33,7 +33,7 @@ bool ValidationImpl() override {
   return valid_;
 }
 
-bool PreProcessingImpl() override {
+bool ChernovTRibbonHorizontalAMmatrixMultMPI::PreProcessingImpl() {
   int rank;
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
   
@@ -76,9 +76,9 @@ bool ChernovTRibbonHorizontalAMmatrixMultMPI::RunImpl() {
   int remainder = global_rowsA_ % size;
   int local_rows = base_rows + (rank < remainder ? 1 : 0);
 
-  std::vector<int> localC = ComputeLocalC(rank, local_rows, localA);
+  std::vector<int> localC = ComputeLocalC(local_rows, localA);
 
-  GatherResult(rank, size, local_rows, localC);
+  GatherResult(rank, size, localC);
   
   return true;
 }
@@ -156,7 +156,7 @@ std::vector<int> ChernovTRibbonHorizontalAMmatrixMultMPI::ScatterMatrixA(int ran
 }
 
 std::vector<int> ChernovTRibbonHorizontalAMmatrixMultMPI::ComputeLocalC(
-    int rank, int local_rows, const std::vector<int>& localA) {
+    int local_rows, const std::vector<int>& localA) {
 
   std::vector<int> localC(local_rows * global_colsB_, 0);
 
@@ -175,7 +175,7 @@ std::vector<int> ChernovTRibbonHorizontalAMmatrixMultMPI::ComputeLocalC(
 }
 
 void ChernovTRibbonHorizontalAMmatrixMultMPI::GatherResult(
-    int rank, int size, int local_rows, const std::vector<int>& localC) {
+    int rank, int size, const std::vector<int>& localC) {
 
   int base_rows = global_rowsA_ / size;
   int remainder = global_rowsA_ % size;

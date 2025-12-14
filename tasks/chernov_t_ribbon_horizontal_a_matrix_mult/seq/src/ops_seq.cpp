@@ -60,7 +60,6 @@ bool ChernovTRibbonHorizontalAMmatrixMultSEQ::RunImpl() {
   int colsA = std::get<1>(input); 
   const auto& matrixA = std::get<2>(input);
   
-  int rowsB = std::get<3>(input); 
   int colsB = std::get<4>(input);  
   const auto& matrixB = std::get<5>(input);
 

@@ -89,12 +89,12 @@ TEST_P(ChernovTFuncTestsProcesses, MatrixMultiplication) {
 
 const std::array<TestType, 2> kTestParam = {
   std::make_tuple("Matrix_2x3_3x3", "matrix_1.txt", 
-    std::vector<int>({30, 36, 42,
-                      66, 81, 96})),
+    std::vector<int>({66, 72, 78,
+                      156, 171, 186})),
   std::make_tuple("Matrix_3x2_2x4", "matrix_2.txt",
-    std::vector<int>({50, 60, 70, 80,
-                      114, 140, 166, 192,
-                      178, 220, 262, 304}))
+    std::vector<int>({29, 32, 35, 38,
+                      65, 72, 79, 86,
+                      101, 112, 123, 134})),
 };
 
 const auto kTestTasksList = std::tuple_cat(

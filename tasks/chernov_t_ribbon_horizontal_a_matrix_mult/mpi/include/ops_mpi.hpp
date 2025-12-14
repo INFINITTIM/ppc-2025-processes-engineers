@@ -21,8 +21,8 @@ class ChernovTRibbonHorizontalAMmatrixMultMPI : public BaseTask {
   void BroadcastMatrixSizes(int rank);
   void BroadcastMatrixB(int rank);
   std::vector<int> ScatterMatrixA(int rank, int size);
-  std::vector<int> ComputeLocalC(int rank, int local_rows, const std::vector<int>& localA);
-  void GatherResult(int rank, int size, int local_rows, const std::vector<int>& localC);
+  std::vector<int> ComputeLocalC(int local_rows, const std::vector<int>& localA);
+  void GatherResult(int rank, int size, const std::vector<int>& localC);
 
   int rowsA_ = 0, colsA_ = 0; 
   int rowsB_ = 0, colsB_ = 0; 
