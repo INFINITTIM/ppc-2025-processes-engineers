@@ -1,6 +1,7 @@
 #pragma once
 
 #include <vector>
+
 #include "chernov_t_ribbon_horizontal_a_matrix_mult/common/include/common.hpp"
 #include "task/include/task.hpp"
 

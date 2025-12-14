@@ -28,8 +28,8 @@ class ChernovTPerfTest : public ppc::util::BaseRunPerfTests<InType, OutType> {
       }
     }
 
-    input_data_ = std::make_tuple(static_cast<int>(kSize_), static_cast<int>(kSize_), matrix_a, static_cast<int>(kSize_),
-                                  static_cast<int>(kSize_), matrix_b);
+    input_data_ = std::make_tuple(static_cast<int>(kSize_), static_cast<int>(kSize_), matrix_a,
+                                  static_cast<int>(kSize_), static_cast<int>(kSize_), matrix_b);
   }
 
   bool CheckTestOutputData(OutType &output_data) final {

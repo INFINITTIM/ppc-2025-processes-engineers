@@ -2,9 +2,9 @@
 
 #include <mpi.h>
 
+#include <array>
 #include <cstddef>
 #include <vector>
-#include <array>
 
 namespace chernov_t_ribbon_horizontal_a_matrix_mult {
 
@@ -25,10 +25,9 @@ bool ChernovTRibbonHorizontalAMmatrixMultMPI::ValidationImpl() {
   int cols_b = std::get<4>(input);
   const auto &vec_b = std::get<5>(input);
 
- valid_ = (cols_a == rows_b) &&
-           (vec_a.size() == static_cast<size_t>(rows_a) * static_cast<size_t>(cols_a)) &&
-           (vec_b.size() == static_cast<size_t>(rows_b) * static_cast<size_t>(cols_b)) &&
-           (rows_a > 0) && (cols_a > 0) && (rows_b > 0) && (cols_b > 0);
+  valid_ = (cols_a == rows_b) && (vec_a.size() == static_cast<size_t>(rows_a) * static_cast<size_t>(cols_a)) &&
+           (vec_b.size() == static_cast<size_t>(rows_b) * static_cast<size_t>(cols_b)) && (rows_a > 0) &&
+           (cols_a > 0) && (rows_b > 0) && (cols_b > 0);
 
   return valid_;
 }
@@ -161,7 +160,7 @@ void ChernovTRibbonHorizontalAMmatrixMultMPI::GatherResult(int rank, int size, c
 
   std::vector<int> recvcounts(size);
   std::vector<int> displacements(size);
-  
+
   if (rank == 0) {
     int offset = 0;
     for (int i = 0; i < size; i++) {

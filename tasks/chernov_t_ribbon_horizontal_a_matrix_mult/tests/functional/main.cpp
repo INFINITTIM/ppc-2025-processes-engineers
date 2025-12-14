@@ -62,7 +62,7 @@ class ChernovTFuncTestsProcesses : public ppc::util::BaseRunFuncTests<InType, Ou
     }
 
     int rows_a = 0;
-    int cols_a = 0; 
+    int cols_a = 0;
     int rows_b = 0;
     int cols_b = 0;
     file >> rows_a >> cols_a >> rows_b >> cols_b;
