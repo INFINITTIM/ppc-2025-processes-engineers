@@ -27,15 +27,9 @@ class ChernovTPerfTest : public ppc::util::BaseRunPerfTests<InType, OutType> {
         matrixB[(i * kSize_) + j] = static_cast<int>(((i * 17 + j * 31) % 100) + 1);
       }
     }
-    
-    input_data_ = std::make_tuple(
-      static_cast<int>(kSize_),  
-      static_cast<int>(kSize_), 
-      matrixA,          
-      static_cast<int>(kSize_), 
-      static_cast<int>(kSize_), 
-      matrixB   
-    );
+
+    input_data_ = std::make_tuple(static_cast<int>(kSize_), static_cast<int>(kSize_), matrixA, static_cast<int>(kSize_),
+                                  static_cast<int>(kSize_), matrixB);
   }
 
   bool CheckTestOutputData(OutType &output_data) final {
@@ -51,9 +45,9 @@ TEST_P(ChernovTPerfTest, RunPerfModes) {
   ExecuteTest(GetParam());
 }
 
-const auto kAllPerfTasks =
-    ppc::util::MakeAllPerfTasks<InType, ChernovTRibbonHorizontalAMmatrixMultMPI, ChernovTRibbonHorizontalAMmatrixMultSEQ>(
-        PPC_SETTINGS_chernov_t_ribbon_horizontal_a_matrix_mult);
+const auto kAllPerfTasks = ppc::util::MakeAllPerfTasks<InType, ChernovTRibbonHorizontalAMmatrixMultMPI,
+                                                       ChernovTRibbonHorizontalAMmatrixMultSEQ>(
+    PPC_SETTINGS_chernov_t_ribbon_horizontal_a_matrix_mult);
 
 const auto kGtestValues = ppc::util::TupleToGTestValues(kAllPerfTasks);
 

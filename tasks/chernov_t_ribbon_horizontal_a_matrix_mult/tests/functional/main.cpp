@@ -88,22 +88,15 @@ TEST_P(ChernovTFuncTestsProcesses, MatrixMultiplication) {
 }
 
 const std::array<TestType, 2> kTestParam = {
-  std::make_tuple("Matrix_2x3_3x3", "matrix_1.txt", 
-    std::vector<int>({66, 72, 78,
-                      156, 171, 186})),
-  std::make_tuple("Matrix_3x2_2x4", "matrix_2.txt",
-    std::vector<int>({29, 32, 35, 38,
-                      65, 72, 79, 86,
-                      101, 112, 123, 134})),
+    std::make_tuple("Matrix_2x3_3x3", "matrix_1.txt", std::vector<int>({66, 72, 78, 156, 171, 186})),
+    std::make_tuple("Matrix_3x2_2x4", "matrix_2.txt",
+                    std::vector<int>({29, 32, 35, 38, 65, 72, 79, 86, 101, 112, 123, 134})),
 };
 
-const auto kTestTasksList = std::tuple_cat(
-    ppc::util::AddFuncTask<ChernovTRibbonHorizontalAMmatrixMultMPI, InType>(
-      kTestParam, 
-      PPC_SETTINGS_chernov_t_ribbon_horizontal_a_matrix_mult),
-    ppc::util::AddFuncTask<ChernovTRibbonHorizontalAMmatrixMultSEQ, InType>(
-      kTestParam, 
-      PPC_SETTINGS_chernov_t_ribbon_horizontal_a_matrix_mult));
+const auto kTestTasksList = std::tuple_cat(ppc::util::AddFuncTask<ChernovTRibbonHorizontalAMmatrixMultMPI, InType>(
+                                               kTestParam, PPC_SETTINGS_chernov_t_ribbon_horizontal_a_matrix_mult),
+                                           ppc::util::AddFuncTask<ChernovTRibbonHorizontalAMmatrixMultSEQ, InType>(
+                                               kTestParam, PPC_SETTINGS_chernov_t_ribbon_horizontal_a_matrix_mult));
 
 const auto kGtestValues = ppc::util::ExpandToValues(kTestTasksList);
 

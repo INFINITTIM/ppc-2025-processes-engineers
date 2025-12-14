@@ -21,17 +21,17 @@ class ChernovTRibbonHorizontalAMmatrixMultMPI : public BaseTask {
   void BroadcastMatrixSizes(int rank);
   void BroadcastMatrixB(int rank);
   std::vector<int> ScatterMatrixA(int rank, int size);
-  std::vector<int> ComputeLocalC(int local_rows, const std::vector<int>& localA);
-  void GatherResult(int rank, int size, const std::vector<int>& localC);
+  std::vector<int> ComputeLocalC(int local_rows, const std::vector<int> &localA);
+  void GatherResult(int rank, int size, const std::vector<int> &localC);
 
-  int rowsA_ = 0, colsA_ = 0; 
-  int rowsB_ = 0, colsB_ = 0; 
+  int rowsA_ = 0, colsA_ = 0;
+  int rowsB_ = 0, colsB_ = 0;
   std::vector<int> matrixA_;
-  std::vector<int> matrixB_; 
+  std::vector<int> matrixB_;
 
   int global_rowsA_ = 0, global_colsA_ = 0;
   int global_rowsB_ = 0, global_colsB_ = 0;
-  
+
   bool valid_ = false;
 };
 
