@@ -101,7 +101,8 @@ const auto kTestTasksList = std::tuple_cat(ppc::util::AddFuncTask<ChernovTRibbon
 
 const auto kGtestValues = ppc::util::ExpandToValues(kTestTasksList);
 
-const auto kPerfTestName = ChernovTFuncTestsMatrixMultProcesses::PrintFuncTestName<ChernovTFuncTestsMatrixMultProcesses>;
+const auto kPerfTestName =
+    ChernovTFuncTestsMatrixMultProcesses::PrintFuncTestName<ChernovTFuncTestsMatrixMultProcesses>;
 
 INSTANTIATE_TEST_SUITE_P(MatrixMultiplicationTests, ChernovTFuncTestsMatrixMultProcesses, kGtestValues, kPerfTestName);
 
