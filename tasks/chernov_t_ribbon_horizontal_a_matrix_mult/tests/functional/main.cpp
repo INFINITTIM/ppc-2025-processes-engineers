@@ -16,7 +16,7 @@
 
 namespace chernov_t_ribbon_horizontal_a_matrix_mult {
 
-class ChernovTFuncTestsProcesses : public ppc::util::BaseRunFuncTests<InType, OutType, TestType> {
+class ChernovTFuncTestsMatrixMultProcesses : public ppc::util::BaseRunFuncTests<InType, OutType, TestType> {
  public:
   static std::string PrintTestParam(const TestType &test_param) {
     return std::get<0>(test_param);
@@ -84,7 +84,7 @@ class ChernovTFuncTestsProcesses : public ppc::util::BaseRunFuncTests<InType, Ou
 
 namespace {
 
-TEST_P(ChernovTFuncTestsProcesses, MatrixMultiplication) {
+TEST_P(ChernovTFuncTestsMatrixMultProcesses, MatrixMultiplication) {
   ExecuteTest(GetParam());
 }
 
@@ -101,9 +101,9 @@ const auto kTestTasksList = std::tuple_cat(ppc::util::AddFuncTask<ChernovTRibbon
 
 const auto kGtestValues = ppc::util::ExpandToValues(kTestTasksList);
 
-const auto kPerfTestName = ChernovTFuncTestsProcesses::PrintFuncTestName<ChernovTFuncTestsProcesses>;
+const auto kPerfTestName = ChernovTFuncTestsMatrixMultProcesses::PrintFuncTestName<ChernovTFuncTestsMatrixMultProcesses>;
 
-INSTANTIATE_TEST_SUITE_P(MatrixMultiplicationTests, ChernovTFuncTestsProcesses, kGtestValues, kPerfTestName);
+INSTANTIATE_TEST_SUITE_P(MatrixMultiplicationTests, ChernovTFuncTestsMatrixMultProcesses, kGtestValues, kPerfTestName);
 
 }  // namespace
 

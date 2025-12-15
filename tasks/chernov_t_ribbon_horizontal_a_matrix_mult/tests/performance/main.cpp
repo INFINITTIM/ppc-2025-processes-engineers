@@ -11,7 +11,7 @@
 
 namespace chernov_t_ribbon_horizontal_a_matrix_mult {
 
-class ChernovTPerfTest : public ppc::util::BaseRunPerfTests<InType, OutType> {
+class ChernovTMatrixMultPerfTest : public ppc::util::BaseRunPerfTests<InType, OutType> {
  private:
   const std::size_t kSize_ = 1100;
   InType input_data_;
@@ -41,7 +41,7 @@ class ChernovTPerfTest : public ppc::util::BaseRunPerfTests<InType, OutType> {
   }
 };
 
-TEST_P(ChernovTPerfTest, RunPerfModes) {
+TEST_P(ChernovTMatrixMultPerfTest, RunPerfModes) {
   ExecuteTest(GetParam());
 }
 
@@ -51,8 +51,8 @@ const auto kAllPerfTasks = ppc::util::MakeAllPerfTasks<InType, ChernovTRibbonHor
 
 const auto kGtestValues = ppc::util::TupleToGTestValues(kAllPerfTasks);
 
-const auto kPerfTestName = ChernovTPerfTest::CustomPerfTestName;
+const auto kPerfTestName = ChernovTMatrixMultPerfTest::CustomPerfTestName;
 
-INSTANTIATE_TEST_SUITE_P(ChernovTPerfTests, ChernovTPerfTest, kGtestValues, kPerfTestName);
+INSTANTIATE_TEST_SUITE_P(ChernovTMatrixMultPerfTests, ChernovTMatrixMultPerfTest, kGtestValues, kPerfTestName);
 
 }  // namespace chernov_t_ribbon_horizontal_a_matrix_mult
