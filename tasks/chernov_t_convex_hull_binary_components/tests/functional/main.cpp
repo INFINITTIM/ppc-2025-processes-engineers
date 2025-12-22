@@ -1,17 +1,11 @@
+// tasks/chernov_t_convex_hull_binary_components/tests/functional/main.cpp
 #include <gtest/gtest.h>
-#include <stb/stb_image.h>
-
-#include <algorithm>
 #include <array>
-#include <cstddef>
-#include <cstdint>
-#include <numeric>
+#include <fstream>
 #include <stdexcept>
 #include <string>
 #include <tuple>
-#include <utility>
 #include <vector>
-
 #include "chernov_t_convex_hull_binary_components/common/include/common.hpp"
 #include "chernov_t_convex_hull_binary_components/mpi/include/ops_mpi.hpp"
 #include "chernov_t_convex_hull_binary_components/seq/include/ops_seq.hpp"
@@ -20,39 +14,30 @@
 
 namespace chernov_t_convex_hull_binary_components {
 
-class ChernovTConvexHullBinaryComponentsFuncTests : public ppc::util::BaseRunFuncTests<InType, OutType, TestType> {
+class ChernovTConvexHullFuncTests : public ppc::util::BaseRunFuncTests<InType, OutType, TestType> {
  public:
   static std::string PrintTestParam(const TestType &test_param) {
-    return std::to_string(std::get<0>(test_param)) + "_" + std::get<1>(test_param);
+    return std::get<0>(test_param);
   }
 
  protected:
   void SetUp() override {
-    int width = -1;
-    int height = -1;
-    int channels = -1;
-    std::vector<uint8_t> img;
-    // Read image in RGB to ensure consistent channel count
-    {
-      std::string abs_path = ppc::util::GetAbsoluteTaskPath(PPC_ID_chernov_t_convex_hull_binary_components, "pic.jpg");
-      auto *data = stbi_load(abs_path.c_str(), &width, &height, &channels, STBI_rgb);
-      if (data == nullptr) {
-        throw std::runtime_error("Failed to load image: " + std::string(stbi_failure_reason()));
-      }
-      channels = STBI_rgb;
-      img = std::vector<uint8_t>(data, data + (static_cast<ptrdiff_t>(width * height * channels)));
-      stbi_image_free(data);
-      if (std::cmp_not_equal(width, height)) {
-        throw std::runtime_error("width != height: ");
-      }
-    }
-
-    TestType params = std::get<static_cast<std::size_t>(ppc::util::GTestParamIndex::kTestParams)>(GetParam());
-    input_data_ = width - height + std::min(std::accumulate(img.begin(), img.end(), 0), channels);
+    TestType params = std::get<static_cast<size_t>(ppc::util::GTestParamIndex::kTestParams)>(GetParam());
+    LoadTestData(params);
   }
 
   bool CheckTestOutputData(OutType &output_data) final {
-    return (input_data_ == output_data);
+    auto expected = std::get<2>(
+      std::get<static_cast<size_t>(ppc::util::GTestParamIndex::kTestParams)>(GetParam()));
+
+    std::set<std::pair<int, int>> out_set, exp_set;
+    for (const auto& hull : output_data) {
+      out_set.insert(hull.begin(), hull.end());
+    }
+    for (const auto& hull : expected) {
+      exp_set.insert(hull.begin(), hull.end());
+    }
+    return out_set == exp_set;
   }
 
   InType GetTestInputData() final {
@@ -60,27 +45,62 @@ class ChernovTConvexHullBinaryComponentsFuncTests : public ppc::util::BaseRunFun
   }
 
  private:
-  InType input_data_ = 0;
+  InType input_data_;
+
+  void LoadTestData(const TestType &params) {
+    std::string filename = std::get<1>(params);
+    std::string abs_path = ppc::util::GetAbsoluteTaskPath(
+        PPC_ID_chernov_t_convex_hull_binary_components, filename);
+    std::ifstream file(abs_path);
+    if (!file.is_open()) {
+      throw std::runtime_error("Failed to open test file: " + abs_path);
+    }
+
+    int width, height;
+    file >> width >> height;
+    std::vector<int> pixels(width * height);
+    for (int i = 0; i < width * height; ++i) {
+      file >> pixels[i];
+    }
+    input_data_ = std::make_tuple(width, height, pixels);
+  }
 };
 
 namespace {
 
-TEST_P(ChernovTConvexHullBinaryComponentsFuncTests, MatmulFromPic) {
+TEST_P(ChernovTConvexHullFuncTests, ConvexHullBinaryComponents) {
   ExecuteTest(GetParam());
 }
 
-const std::array<TestType, 3> kTestParam = {std::make_tuple(3, "3"), std::make_tuple(5, "5"), std::make_tuple(7, "7")};
+const std::array<TestType, 5> kTestParam = {{
+    std::make_tuple("Empty", "empty.txt", OutType{}),
+    std::make_tuple("SinglePixel", "single.txt", OutType{{{0, 0}}}),
 
-const auto kTestTasksList =
-    std::tuple_cat(ppc::util::AddFuncTask<ChernovTConvexHullBinaryComponentsMPI, InType>(kTestParam, PPC_SETTINGS_chernov_t_convex_hull_binary_components),
-                   ppc::util::AddFuncTask<ChernovTConvexHullBinaryComponentsSEQ, InType>(kTestParam, PPC_SETTINGS_chernov_t_convex_hull_binary_components));
+    std::make_tuple("Diag3x3", "diag3x3.txt", OutType{
+        {{0, 0}}, {{1, 1}}, {{2, 2}}
+    }),
+
+    std::make_tuple("Square2x2", "square2x2.txt", OutType{
+        {{0, 0}, {0, 1}, {1, 1}, {1, 0}}
+    }),
+
+    std::make_tuple("TwoSquares", "two_squares.txt", OutType{
+        {{0, 0}, {0, 1}, {1, 1}, {1, 0}},
+        {{3, 0}, {3, 1}, {4, 1}, {4, 0}}
+    })
+}};
+
+const auto kTestTasksList = std::tuple_cat(
+    ppc::util::AddFuncTask<ChernovTConvexHullBinaryComponentsMPI, InType>(
+        kTestParam, PPC_SETTINGS_chernov_t_convex_hull_binary_components),
+    ppc::util::AddFuncTask<ChernovTConvexHullBinaryComponentsSEQ, InType>(
+        kTestParam, PPC_SETTINGS_chernov_t_convex_hull_binary_components)
+);
 
 const auto kGtestValues = ppc::util::ExpandToValues(kTestTasksList);
+const auto kTestName = ChernovTConvexHullFuncTests::PrintFuncTestName<ChernovTConvexHullFuncTests>;
 
-const auto kPerfTestName = ChernovTConvexHullBinaryComponentsFuncTests::PrintFuncTestName<ChernovTConvexHullBinaryComponentsFuncTests>;
-
-INSTANTIATE_TEST_SUITE_P(PicMatrixTests, ChernovTConvexHullBinaryComponentsFuncTests, kGtestValues, kPerfTestName);
+INSTANTIATE_TEST_SUITE_P(ConvexHullTests, ChernovTConvexHullFuncTests, kGtestValues, kTestName);
 
 }  // namespace
-
 }  // namespace chernov_t_convex_hull_binary_components
