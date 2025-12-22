@@ -21,11 +21,18 @@ class ChernovTConvexHullBinaryComponentsMPI : public BaseTask {
   bool PostProcessingImpl() override;
 
   void FindConnectedComponentsMpi();
+  void ProcessExtendedRegion(int extended_start_row, int extended_local_rows, const std::vector<int> &extended_pixels,
+                             std::vector<std::vector<bool>> &visited_extended,
+                             std::vector<std::vector<std::pair<int, int>>> &all_components);
+  void ExchangeBoundaryRows();
+  void FilterLocalComponents(const std::vector<std::vector<std::pair<int, int>>> &all_components);
   void ComputeConvexHulls();
   void GatherAndBroadcastResult();
+  void SendHullsToRank0();
+  void ReceiveHullsFromProcess(int src, int count);
 
-  std::vector<std::pair<int, int>> ConvexHull(std::vector<std::pair<int, int>> pts);
-  bool Clockwise(const std::pair<int, int> &a, const std::pair<int, int> &b, const std::pair<int, int> &c);
+  static std::vector<std::pair<int, int>> ConvexHull(std::vector<std::pair<int, int>> pts);
+  static bool Clockwise(const std::pair<int, int> &a, const std::pair<int, int> &b, const std::pair<int, int> &c);
 
   int width_ = 0;
   int height_ = 0;
