@@ -1,11 +1,6 @@
 #include <gtest/gtest.h>
 
-#include <cstddef>
-#include <cstdint>
 #include <random>
-#include <set>
-#include <tuple>
-#include <utility>
 #include <vector>
 
 #include "chernov_t_convex_hull_binary_components/common/include/common.hpp"

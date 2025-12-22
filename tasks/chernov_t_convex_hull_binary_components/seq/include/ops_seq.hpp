@@ -1,5 +1,4 @@
 #pragma once
-#include <array>
 #include <utility>
 #include <vector>
 
@@ -24,5 +23,7 @@ class ChernovTConvexHullBinaryComponentsSEQ : public BaseTask {
                                                                                const std::vector<int> &pixels);
   static std::vector<std::pair<int, int>> ConvexHull(std::vector<std::pair<int, int>> pts);
   static bool Clockwise(const std::pair<int, int> &a, const std::pair<int, int> &b, const std::pair<int, int> &c);
+  static void BuildLowerHull(std::vector<std::pair<int, int>> &hull, const std::vector<std::pair<int, int>> &pts);
+  static void BuildUpperHull(std::vector<std::pair<int, int>> &hull, const std::vector<std::pair<int, int>> &pts);
 };
 }  // namespace chernov_t_convex_hull_binary_components

@@ -6,6 +6,7 @@
 #include <array>
 #include <cstddef>
 #include <cstdint>
+#include <iterator>
 #include <queue>
 #include <utility>
 #include <vector>
@@ -95,7 +96,8 @@ void ChernovTConvexHullBinaryComponentsMPI::FindConnectedComponentsMpi() {
   for (int local_row = 0; local_row < local_rows; ++local_row) {
     std::size_t src = static_cast<std::size_t>(local_row) * static_cast<std::size_t>(width_);
     std::size_t dst = static_cast<std::size_t>(offset + local_row) * static_cast<std::size_t>(width_);
-    std::copy_n(local_pixels_.begin() + src, width_, extended_pixels.begin() + dst);
+    std::copy_n(local_pixels_.begin() + static_cast<std::ptrdiff_t>(src), static_cast<std::ptrdiff_t>(width_),
+                extended_pixels.begin() + static_cast<std::ptrdiff_t>(dst));
   }
 
   ExchangeBoundaryRows(has_top, has_bottom, extended_pixels, width_);
@@ -164,8 +166,8 @@ std::vector<std::vector<std::pair<int, int>>> ChernovTConvexHullBinaryComponents
           q.pop();
           comp.emplace_back(cx, global_y_offset + cy);
           for (int dir = 0; dir < 4; ++dir) {
-            int nx = cx + dx[dir];
-            int ny = cy + dy[dir];
+            int nx = cx + dx.at(dir);
+            int ny = cy + dy.at(dir);
             if (nx >= 0 && nx < width && ny >= 0 && ny < extended_rows) {
               std::size_t nidx =
                   (static_cast<std::size_t>(ny) * static_cast<std::size_t>(width)) + static_cast<std::size_t>(nx);
@@ -225,6 +227,54 @@ void ChernovTConvexHullBinaryComponentsMPI::ComputeConvexHulls() {
   }
 }
 
+void ChernovTConvexHullBinaryComponentsMPI::BuildLowerHull(std::vector<std::pair<int, int>> &hull,
+                                                           const std::vector<std::pair<int, int>> &pts) {
+  std::size_t k = 0;
+  for (std::size_t i = 0; i < pts.size(); ++i) {
+    while (k >= 2U) {
+      const auto &a = hull[k - 2];
+      const auto &b = hull[k - 1];
+      const auto &c = pts[i];
+      std::int64_t cross =
+          (static_cast<std::int64_t>(b.first - a.first) * static_cast<std::int64_t>(c.second - a.second)) -
+          (static_cast<std::int64_t>(b.second - a.second) * static_cast<std::int64_t>(c.first - a.first));
+      if (cross > 0) {
+        break;
+      }
+      --k;
+      hull.pop_back();
+    }
+    hull.push_back(pts[i]);
+    ++k;
+  }
+}
+
+void ChernovTConvexHullBinaryComponentsMPI::BuildUpperHull(std::vector<std::pair<int, int>> &hull,
+                                                           const std::vector<std::pair<int, int>> &pts) {
+  std::size_t k = hull.size();
+  std::size_t t = k + 1;
+  for (std::size_t i = pts.size() - 2; i != static_cast<std::size_t>(-1); --i) {
+    while (k >= t) {
+      const auto &a = hull[k - 2];
+      const auto &b = hull[k - 1];
+      const auto &c = pts[i];
+      std::int64_t cross =
+          (static_cast<std::int64_t>(b.first - a.first) * static_cast<std::int64_t>(c.second - a.second)) -
+          (static_cast<std::int64_t>(b.second - a.second) * static_cast<std::int64_t>(c.first - a.first));
+      if (cross > 0) {
+        break;
+      }
+      --k;
+      hull.pop_back();
+    }
+    hull.push_back(pts[i]);
+    ++k;
+  }
+  if (hull.size() > 1U) {
+    hull.pop_back();
+  }
+}
+
 std::vector<std::pair<int, int>> ChernovTConvexHullBinaryComponentsMPI::ConvexHull(
     std::vector<std::pair<int, int>> pts) {
   if (pts.size() <= 1U) {
@@ -244,48 +294,8 @@ std::vector<std::pair<int, int>> ChernovTConvexHullBinaryComponentsMPI::ConvexHu
   }
 
   std::vector<std::pair<int, int>> hull;
-  std::size_t k = 0;
-
-  for (std::size_t i = 0; i < pts.size(); ++i) {
-    while (k >= 2U) {
-      const auto &a = hull[k - 2];
-      const auto &b = hull[k - 1];
-      const auto &c = pts[i];
-      std::int64_t cross =
-          (static_cast<std::int64_t>(b.first - a.first) * static_cast<std::int64_t>(c.second - a.second)) -
-          (static_cast<std::int64_t>(b.second - a.second) * static_cast<std::int64_t>(c.first - a.first));
-      if (cross > 0) {
-        break;
-      }
-      --k;
-      hull.pop_back();
-    }
-    hull.push_back(pts[i]);
-    ++k;
-  }
-
-  std::size_t t = k + 1;
-  for (std::size_t i = pts.size() - 2; i != static_cast<std::size_t>(-1); --i) {
-    while (k >= t) {
-      const auto &a = hull[k - 2];
-      const auto &b = hull[k - 1];
-      const auto &c = pts[i];
-      std::int64_t cross =
-          (static_cast<std::int64_t>(b.first - a.first) * static_cast<std::int64_t>(c.second - a.second)) -
-          (static_cast<std::int64_t>(b.second - a.second) * static_cast<std::int64_t>(c.first - a.first));
-      if (cross > 0) {
-        break;
-      }
-      --k;
-      hull.pop_back();
-    }
-    hull.push_back(pts[i]);
-    ++k;
-  }
-
-  if (hull.size() > 1U) {
-    hull.pop_back();
-  }
+  BuildLowerHull(hull, pts);
+  BuildUpperHull(hull, pts);
   return hull;
 }
 

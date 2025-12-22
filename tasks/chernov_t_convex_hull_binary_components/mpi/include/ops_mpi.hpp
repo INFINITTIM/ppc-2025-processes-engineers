@@ -1,5 +1,4 @@
 #pragma once
-#include <array>
 #include <utility>
 #include <vector>
 
@@ -35,6 +34,8 @@ class ChernovTConvexHullBinaryComponentsMPI : public BaseTask {
 
   static std::vector<std::pair<int, int>> ConvexHull(std::vector<std::pair<int, int>> pts);
   static bool Clockwise(const std::pair<int, int> &a, const std::pair<int, int> &b, const std::pair<int, int> &c);
+  static void BuildLowerHull(std::vector<std::pair<int, int>> &hull, const std::vector<std::pair<int, int>> &pts);
+  static void BuildUpperHull(std::vector<std::pair<int, int>> &hull, const std::vector<std::pair<int, int>> &pts);
 
   int width_ = 0;
   int height_ = 0;

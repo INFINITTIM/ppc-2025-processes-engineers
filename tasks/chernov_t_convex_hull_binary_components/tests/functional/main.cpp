@@ -1,12 +1,10 @@
 #include <gtest/gtest.h>
 
 #include <array>
-#include <cstddef>
 #include <fstream>
 #include <set>
 #include <stdexcept>
 #include <string>
-#include <tuple>
 #include <utility>
 #include <vector>
 
@@ -26,7 +24,7 @@ class ChernovTConvexHullFuncTests : public ppc::util::BaseRunFuncTests<InType, O
 
  protected:
   void SetUp() override {
-    TestType params = std::get<static_cast<size_t>(ppc::util::GTestParamIndex::kTestParams)>(GetParam());
+    TestType params = std::get<static_cast<std::size_t>(ppc::util::GTestParamIndex::kTestParams)>(GetParam());
     LoadTestData(params);
   }
 
@@ -79,11 +77,8 @@ TEST_P(ChernovTConvexHullFuncTests, ConvexHullBinaryComponents) {
 
 const std::array<TestType, 5> kTestParam = {
     {std::make_tuple("Empty", "empty.txt", OutType{}), std::make_tuple("SinglePixel", "single.txt", OutType{{{0, 0}}}),
-
      std::make_tuple("Diag3x3", "diag3x3.txt", OutType{{{0, 0}}, {{1, 1}}, {{2, 2}}}),
-
      std::make_tuple("Square2x2", "square2x2.txt", OutType{{{0, 0}, {0, 1}, {1, 1}, {1, 0}}}),
-
      std::make_tuple("TwoSquares", "two_squares.txt",
                      OutType{{{0, 0}, {0, 1}, {1, 1}, {1, 0}}, {{3, 0}, {3, 1}, {4, 1}, {4, 0}}})}};
 
