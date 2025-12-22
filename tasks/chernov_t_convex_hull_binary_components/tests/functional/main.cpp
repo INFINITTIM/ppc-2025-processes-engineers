@@ -58,7 +58,8 @@ class ChernovTConvexHullFuncTests : public ppc::util::BaseRunFuncTests<InType, O
       throw std::runtime_error("Failed to open test file: " + abs_path);
     }
 
-    int width, height;
+    int width = 0;
+    int height = 0;
     file >> width >> height;
     std::vector<int> pixels(width * height);
     for (int i = 0; i < width * height; ++i) {
