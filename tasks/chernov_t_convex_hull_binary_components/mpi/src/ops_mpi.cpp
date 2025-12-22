@@ -169,9 +169,9 @@ void ChernovTConvexHullBinaryComponentsMPI::FindConnectedComponentsMpi() {
         }
 
         std::vector<std::pair<int, int>> local_comp;
-        for (auto [x, y] : comp) {
-          if (y >= start_row_ && y < end_row_) {
-            local_comp.emplace_back(x, y);
+        for (auto [px, py] : comp) {
+          if (py >= start_row_ && y < end_row_) {
+            local_comp.emplace_back(px, py);
           }
         }
         if (!local_comp.empty()) {
