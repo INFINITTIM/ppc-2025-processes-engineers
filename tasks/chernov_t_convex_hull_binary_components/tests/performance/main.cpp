@@ -22,17 +22,17 @@ class ChernovTConvexHullPerfTests : public ppc::util::BaseRunPerfTests<InType, O
   InType input_data_;
 
   void SetUp() override {
-    std::vector<int> pixels(kWidth_ * kHeight_, 0);
+    std::vector<int> pixels(static_cast<std::size_t>(kWidth_) * static_cast<std::size_t>(kHeight_), 0);
     std::mt19937 gen(42);
 
     for (int i = 0; i < 60; ++i) {
-      int w = 20 + gen() % 80;
-      int h = 20 + gen() % 80;
-      int x = gen() % (kWidth_ - w);
-      int y = gen() % (kHeight_ - h);
+      int w = 20 + static_cast<int>(gen() % 80);
+      int h = 20 + static_cast<int>(gen() % 80);
+      int x = static_cast<int>(gen() % (kWidth_ - w));
+      int y = static_cast<int>(gen() % (kHeight_ - h));
       for (int dy = 0; dy < h; ++dy) {
         for (int dx = 0; dx < w; ++dx) {
-          pixels[(y + dy) * kWidth_ + (x + dx)] = 1;
+          pixels[static_cast<std::size_t>((y + dy) * kWidth_) + static_cast<std::size_t>(x + dx)] = 1;
         }
       }
     }
@@ -40,25 +40,28 @@ class ChernovTConvexHullPerfTests : public ppc::util::BaseRunPerfTests<InType, O
     auto draw_circle = [&](int cx, int cy, int r) {
       for (int dy = -r; dy <= r; ++dy) {
         for (int dx = -r; dx <= r; ++dx) {
-          if (dx * dx + dy * dy <= r * r) {
+          if (static_cast<std::int64_t>(dx) * static_cast<std::int64_t>(dx) +
+                  static_cast<std::int64_t>(dy) * static_cast<std::int64_t>(dy) <=
+              static_cast<std::int64_t>(r) * static_cast<std::int64_t>(r)) {
             int x = cx + dx, y = cy + dy;
             if (x >= 0 && x < kWidth_ && y >= 0 && y < kHeight_) {
-              pixels[y * kWidth_ + x] = 1;
+              pixels[static_cast<std::size_t>(y * kWidth_) + static_cast<std::size_t>(x)] = 1;
             }
           }
         }
       }
     };
     for (int i = 0; i < 40; ++i) {
-      int r = 25 + gen() % 50;
-      int cx = r + gen() % (kWidth_ - 2 * r);
-      int cy = r + gen() % (kHeight_ - 2 * r);
+      int r = 25 + static_cast<int>(gen() % 50);
+      int cx = r + static_cast<int>(gen() % (kWidth_ - 2 * r));
+      int cy = r + static_cast<int>(gen() % (kHeight_ - 2 * r));
       draw_circle(cx, cy, r);
     }
 
-    int noise_count = (kWidth_ * kHeight_) / 1000;
-    for (int i = 0; i < noise_count; ++i) {
-      int idx = gen() % (kWidth_ * kHeight_);
+    std::size_t noise_count = (static_cast<std::size_t>(kWidth_) * static_cast<std::size_t>(kHeight_)) / 1000;
+    for (std::size_t i = 0; i < noise_count; ++i) {
+      std::size_t idx =
+          static_cast<std::size_t>(gen() % (static_cast<std::int64_t>(kWidth_) * static_cast<std::int64_t>(kHeight_)));
       pixels[idx] = 1;
     }
 

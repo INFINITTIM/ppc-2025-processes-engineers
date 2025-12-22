@@ -1,4 +1,5 @@
 #pragma once
+#include <array>
 #include <utility>
 #include <vector>
 
@@ -20,7 +21,6 @@ class ChernovTConvexHullBinaryComponentsMPI : public BaseTask {
   bool RunImpl() override;
   bool PostProcessingImpl() override;
 
-  // Разбитые функции
   void FindConnectedComponentsMpi();
   void ExchangeBoundaryRows(bool has_top, bool has_bottom, std::vector<int> &extended_pixels, int width);
   std::vector<std::vector<std::pair<int, int>>> ProcessExtendedRegion(const std::vector<int> &extended_pixels,

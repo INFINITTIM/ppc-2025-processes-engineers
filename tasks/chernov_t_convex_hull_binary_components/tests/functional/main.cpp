@@ -31,7 +31,8 @@ class ChernovTConvexHullFuncTests : public ppc::util::BaseRunFuncTests<InType, O
   }
 
   bool CheckTestOutputData(OutType &output_data) final {
-    auto expected = std::get<2>(std::get<static_cast<size_t>(ppc::util::GTestParamIndex::kTestParams)>(GetParam()));
+    auto expected =
+        std::get<2>(std::get<static_cast<std::size_t>(ppc::util::GTestParamIndex::kTestParams)>(GetParam()));
 
     std::set<std::pair<int, int>> out_set;
     std::set<std::pair<int, int>> exp_set;
@@ -62,8 +63,8 @@ class ChernovTConvexHullFuncTests : public ppc::util::BaseRunFuncTests<InType, O
     int width = 0;
     int height = 0;
     file >> width >> height;
-    std::vector<int> pixels(width * height);
-    for (int i = 0; i < width * height; ++i) {
+    std::vector<int> pixels(static_cast<std::size_t>(width) * static_cast<std::size_t>(height));
+    for (std::size_t i = 0; i < static_cast<std::size_t>(width) * static_cast<std::size_t>(height); ++i) {
       file >> pixels[i];
     }
     input_data_ = std::make_tuple(width, height, pixels);

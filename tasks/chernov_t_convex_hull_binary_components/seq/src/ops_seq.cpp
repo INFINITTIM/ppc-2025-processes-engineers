@@ -1,7 +1,7 @@
-// tasks/chernov_t_convex_hull_binary_components/seq/src/ops_seq.cpp
 #include "chernov_t_convex_hull_binary_components/seq/include/ops_seq.hpp"
 
 #include <algorithm>
+#include <array>
 #include <cstddef>
 #include <cstdint>
 #include <queue>
@@ -21,7 +21,7 @@ bool ChernovTConvexHullBinaryComponentsSEQ::ValidationImpl() {
   if (width <= 0 || height <= 0) {
     return false;
   }
-  if (pixels.size() != static_cast<size_t>(width) * static_cast<size_t>(height)) {
+  if (pixels.size() != static_cast<std::size_t>(width) * static_cast<std::size_t>(height)) {
     return false;
   }
   for (int p : pixels) {
@@ -50,31 +50,31 @@ bool ChernovTConvexHullBinaryComponentsSEQ::RunImpl() {
 }
 
 bool ChernovTConvexHullBinaryComponentsSEQ::PostProcessingImpl() {
-  return !GetOutput().empty() || true;
+  return true;
 }
 
 std::vector<std::vector<std::pair<int, int>>> ChernovTConvexHullBinaryComponentsSEQ::FindConnectedComponents(
     int width, int height, const std::vector<int> &pixels) {
   std::vector<std::vector<bool>> visited(height, std::vector<bool>(width, false));
   std::vector<std::vector<std::pair<int, int>>> components;
-  const int dx[4] = {0, 0, -1, 1};
-  const int dy[4] = {-1, 1, 0, 0};
+  const std::array<int, 4> dx = {0, 0, -1, 1};
+  const std::array<int, 4> dy = {-1, 1, 0, 0};
 
-  for (int y = 0; y < height; ++y) {
-    for (int x = 0; x < width; ++x) {
-      if (pixels[y * width + x] == 1 && !visited[y][x]) {
+  for (int row = 0; row < height; ++row) {
+    for (int col = 0; col < width; ++col) {
+      if (pixels[row * width + col] == 1 && !visited[row][col]) {
         std::vector<std::pair<int, int>> comp;
         std::queue<std::pair<int, int>> q;
-        q.emplace(x, y);
-        visited[y][x] = true;
+        q.emplace(col, row);
+        visited[row][col] = true;
 
         while (!q.empty()) {
           auto [cx, cy] = q.front();
           q.pop();
           comp.emplace_back(cx, cy);
-          for (int d = 0; d < 4; ++d) {
-            int nx = cx + dx[d];
-            int ny = cy + dy[d];
+          for (int dir = 0; dir < 4; ++dir) {
+            int nx = cx + dx[dir];
+            int ny = cy + dy[dir];
             if (nx >= 0 && nx < width && ny >= 0 && ny < height && pixels[ny * width + nx] == 1 && !visited[ny][nx]) {
               visited[ny][nx] = true;
               q.emplace(nx, ny);
@@ -90,59 +90,70 @@ std::vector<std::vector<std::pair<int, int>>> ChernovTConvexHullBinaryComponents
 
 bool ChernovTConvexHullBinaryComponentsSEQ::Clockwise(const std::pair<int, int> &a, const std::pair<int, int> &b,
                                                       const std::pair<int, int> &c) {
-  long long cross = static_cast<long long>(b.first - a.first) * (c.second - a.second) -
-                    static_cast<long long>(b.second - a.second) * (c.first - a.first);
+  std::int64_t cross = (static_cast<std::int64_t>(b.first - a.first) * static_cast<std::int64_t>(c.second - a.second)) -
+                       (static_cast<std::int64_t>(b.second - a.second) * static_cast<std::int64_t>(c.first - a.first));
   return cross > 0;
 }
 
 std::vector<std::pair<int, int>> ChernovTConvexHullBinaryComponentsSEQ::ConvexHull(
     std::vector<std::pair<int, int>> pts) {
-  if (pts.size() <= 1) {
+  if (pts.size() <= 1U) {
     return pts;
   }
   std::sort(pts.begin(), pts.end());
-  pts.erase(std::unique(pts.begin(), pts.end()), pts.end());
-  if (pts.size() == 1) {
+  auto last = std::unique(pts.begin(), pts.end());
+  pts.erase(last, pts.end());
+  if (pts.size() == 1U) {
     return pts;
   }
-  if (pts.size() == 2) {
+  if (pts.size() == 2U) {
+    if (pts[0] == pts[1]) {
+      return {pts[0]};
+    }
     return pts;
   }
 
   std::vector<std::pair<int, int>> hull;
+  std::size_t k = 0;
 
-  for (int i = 0; i < (int)pts.size(); ++i) {
-    while (hull.size() >= 2) {
-      auto &a = hull[hull.size() - 2];
-      auto &b = hull.back();
-      auto &c = pts[i];
-      long long cross =
-          1LL * (b.first - a.first) * (c.second - a.second) - 1LL * (b.second - a.second) * (c.first - a.first);
-      if (cross < 0) {
+  for (std::size_t i = 0; i < pts.size(); ++i) {
+    while (k >= 2U) {
+      const auto &a = hull[k - 2];
+      const auto &b = hull[k - 1];
+      const auto &c = pts[i];
+      std::int64_t cross =
+          (static_cast<std::int64_t>(b.first - a.first) * static_cast<std::int64_t>(c.second - a.second)) -
+          (static_cast<std::int64_t>(b.second - a.second) * static_cast<std::int64_t>(c.first - a.first));
+      if (cross > 0) {
         break;
       }
+      --k;
       hull.pop_back();
     }
     hull.push_back(pts[i]);
+    ++k;
   }
 
-  int lower_len = hull.size();
-  for (int i = (int)pts.size() - 2; i >= 0; --i) {
-    while ((int)hull.size() > lower_len) {
-      auto &a = hull[hull.size() - 2];
-      auto &b = hull.back();
-      auto &c = pts[i];
-      long long cross =
-          1LL * (b.first - a.first) * (c.second - a.second) - 1LL * (b.second - a.second) * (c.first - a.first);
-      if (cross < 0) {
+  std::size_t t = k + 1;
+  for (std::size_t i = pts.size() - 2; i != static_cast<std::size_t>(-1); --i) {
+    while (k >= t) {
+      const auto &a = hull[k - 2];
+      const auto &b = hull[k - 1];
+      const auto &c = pts[i];
+      std::int64_t cross =
+          (static_cast<std::int64_t>(b.first - a.first) * static_cast<std::int64_t>(c.second - a.second)) -
+          (static_cast<std::int64_t>(b.second - a.second) * static_cast<std::int64_t>(c.first - a.first));
+      if (cross > 0) {
         break;
       }
+      --k;
       hull.pop_back();
     }
     hull.push_back(pts[i]);
+    ++k;
   }
 
-  if (hull.size() > 1) {
+  if (hull.size() > 1U) {
     hull.pop_back();
   }
   return hull;

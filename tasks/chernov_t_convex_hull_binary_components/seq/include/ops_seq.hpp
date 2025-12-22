@@ -1,5 +1,5 @@
 #pragma once
-
+#include <array>
 #include <utility>
 #include <vector>
 
@@ -20,9 +20,9 @@ class ChernovTConvexHullBinaryComponentsSEQ : public BaseTask {
   bool RunImpl() override;
   bool PostProcessingImpl() override;
 
-  std::vector<std::vector<std::pair<int, int>>> FindConnectedComponents(int width, int height,
-                                                                        const std::vector<int> &pixels);
-  std::vector<std::pair<int, int>> ConvexHull(std::vector<std::pair<int, int>> pts);
-  bool Clockwise(const std::pair<int, int> &a, const std::pair<int, int> &b, const std::pair<int, int> &c);
+  static std::vector<std::vector<std::pair<int, int>>> FindConnectedComponents(int width, int height,
+                                                                               const std::vector<int> &pixels);
+  static std::vector<std::pair<int, int>> ConvexHull(std::vector<std::pair<int, int>> pts);
+  static bool Clockwise(const std::pair<int, int> &a, const std::pair<int, int> &b, const std::pair<int, int> &c);
 };
 }  // namespace chernov_t_convex_hull_binary_components
