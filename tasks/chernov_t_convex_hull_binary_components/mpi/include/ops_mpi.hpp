@@ -21,17 +21,24 @@ class ChernovTConvexHullBinaryComponentsMPI : public BaseTask {
   bool PostProcessingImpl() override;
 
   void FindConnectedComponentsMpi();
-  void ExchangeBoundaryRows();
-  void ProcessExtendedRegion();
-  void FilterLocalComponents(const std::vector<std::pair<int, int>> &comp);
-
   void ComputeConvexHulls();
   void GatherAndBroadcastResult();
-  void SendHullsToRank0();
-  void ReceiveHullsFromRank(int src);
 
-  static std::vector<std::pair<int, int>> ConvexHull(std::vector<std::pair<int, int>> pts);
-  static bool Clockwise(const std::pair<int, int> &a, const std::pair<int, int> &b, const std::pair<int, int> &c);
+  std::vector<std::pair<int, int>> ConvexHull(std::vector<std::pair<int, int>> pts);
+  bool Clockwise(const std::pair<int, int> &a, const std::pair<int, int> &b, const std::pair<int, int> &c);
+
+  // Новые вспомогательные функции для уменьшения сложности
+  void SendReceiveNeighborRows(bool has_top, bool has_bottom, std::vector<int> &top_recv,
+                               std::vector<int> &bottom_recv);
+  void ProcessPixelComponent(int col, int ey, int global_y_offset, const std::vector<int> &extended_pixels,
+                             std::vector<std::vector<bool>> &visited);
+  void ProcessComponentQueue(std::queue<std::pair<int, int>> &q, const std::vector<int> &extended_pixels,
+                             std::vector<std::vector<bool>> &visited, std::vector<std::pair<int, int>> &comp);
+  void BuildLowerHull(std::vector<std::pair<int, int>> &pts, std::vector<std::pair<int, int>> &hull);
+  void BuildUpperHull(std::vector<std::pair<int, int>> &pts, std::vector<std::pair<int, int>> &hull, size_t lower_len);
+  void GatherWorkerData(int src, std::vector<int> &all_sizes, std::vector<int> &global_flat);
+  void SendLocalData();
+  void ReconstructGlobalHulls(std::vector<int> &all_sizes, std::vector<int> &flat, OutType &global_hulls);
 
   int width_ = 0;
   int height_ = 0;
@@ -42,13 +49,6 @@ class ChernovTConvexHullBinaryComponentsMPI : public BaseTask {
   std::vector<int> local_pixels_;
   std::vector<std::vector<std::pair<int, int>>> local_hulls_;
   bool valid_ = false;
-
-  // Для ExchangeBoundaryRows
-  std::vector<int> top_recv_;
-  std::vector<int> bottom_recv_;
-  std::vector<int> extended_pixels_;
-  int extended_rows_ = 0;
-  int offset_top_ = 0;
 };
 
 }  // namespace chernov_t_convex_hull_binary_components
