@@ -1,6 +1,10 @@
 #include <gtest/gtest.h>
 
+#include <cstddef>
 #include <random>
+#include <set>
+#include <tuple>
+#include <utility>
 #include <vector>
 
 #include "chernov_t_convex_hull_binary_components/common/include/common.hpp"
@@ -57,7 +61,7 @@ class ChernovTConvexHullPerfTests : public ppc::util::BaseRunPerfTests<InType, O
       pixels[idx] = 1;
     }
 
-    input_data_ = std::make_tuple(kWidth_, kHeight_, pixels);
+    input_data_ = InType{kWidth_, kHeight_, pixels};
   }
 
   bool CheckTestOutputData(OutType &output_data) final {

@@ -1,4 +1,9 @@
 #pragma once
+
+#include <cstddef>
+#include <utility>
+#include <vector>
+
 #include "chernov_t_convex_hull_binary_components/common/include/common.hpp"
 #include "task/include/task.hpp"
 
