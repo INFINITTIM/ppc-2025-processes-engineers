@@ -1,7 +1,5 @@
 #pragma once
-#include <array>    // <-- добавлено
-#include <cstddef>  // <-- добавлено
-#include <utility>  // <-- добавлено
+#include <utility>
 #include <vector>
 
 #include "chernov_t_convex_hull_binary_components/common/include/common.hpp"

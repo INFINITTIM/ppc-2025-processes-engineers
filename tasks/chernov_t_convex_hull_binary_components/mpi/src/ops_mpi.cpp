@@ -6,7 +6,6 @@
 #include <array>
 #include <cstddef>
 #include <queue>
-#include <set>
 #include <vector>
 
 namespace chernov_t_convex_hull_binary_components {
@@ -115,9 +114,10 @@ void ChernovTConvexHullBinaryComponentsMPI::FindConnectedComponentsMpi() {
                 extended_pixels.begin() + static_cast<size_t>(offset + local_row) * static_cast<size_t>(width_));
   }
 
-  MPI_Request reqs[4];
+  std::array<MPI_Request, 4> reqs;
   int req_count = 0;
-  std::vector<int> top_recv, bottom_recv;
+  std::vector<int> top_recv;
+  std::vector<int> bottom_recv;
 
   if (has_top) {
     top_recv.resize(width_);
@@ -134,7 +134,7 @@ void ChernovTConvexHullBinaryComponentsMPI::FindConnectedComponentsMpi() {
 
   if (req_count > 0) {
     std::vector<MPI_Status> statuses(req_count);
-    MPI_Waitall(req_count, reqs, statuses.data());
+    MPI_Waitall(req_count, reqs.data(), statuses.data());
   }
 
   if (has_top) {
@@ -152,8 +152,8 @@ void ChernovTConvexHullBinaryComponentsMPI::FindConnectedComponentsMpi() {
 
   for (int ey = 0; ey < extended_rows; ++ey) {
     for (int col = 0; col < width_; ++col) {
-      if (extended_pixels[static_cast<size_t>(ey) * static_cast<size_t>(width_) + static_cast<size_t>(col)] == 1 &&
-          !visited[static_cast<size_t>(ey)][static_cast<size_t>(col)]) {
+      size_t pixel_idx = static_cast<size_t>(ey) * static_cast<size_t>(width_) + static_cast<size_t>(col);
+      if (extended_pixels[pixel_idx] == 1 && !visited[static_cast<size_t>(ey)][static_cast<size_t>(col)]) {
         std::vector<std::pair<int, int>> comp;
         std::queue<std::pair<int, int>> q;
         q.emplace(col, ey);
@@ -166,11 +166,12 @@ void ChernovTConvexHullBinaryComponentsMPI::FindConnectedComponentsMpi() {
           for (int dir = 0; dir < 4; ++dir) {
             int nx = cx + dx[dir];
             int ny = cy + dy[dir];
-            if (nx >= 0 && nx < width_ && ny >= 0 && ny < extended_rows &&
-                extended_pixels[static_cast<size_t>(ny) * static_cast<size_t>(width_) + static_cast<size_t>(nx)] == 1 &&
-                !visited[static_cast<size_t>(ny)][static_cast<size_t>(nx)]) {
-              visited[static_cast<size_t>(ny)][static_cast<size_t>(nx)] = true;
-              q.emplace(nx, ny);
+            if (nx >= 0 && nx < width_ && ny >= 0 && ny < extended_rows) {
+              size_t neighbor_idx = static_cast<size_t>(ny) * static_cast<size_t>(width_) + static_cast<size_t>(nx);
+              if (extended_pixels[neighbor_idx] == 1 && !visited[static_cast<size_t>(ny)][static_cast<size_t>(nx)]) {
+                visited[static_cast<size_t>(ny)][static_cast<size_t>(nx)] = true;
+                q.emplace(nx, ny);
+              }
             }
           }
         }
