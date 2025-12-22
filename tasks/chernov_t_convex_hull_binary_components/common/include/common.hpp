@@ -1,8 +1,9 @@
 #pragma once
 #include <string>
 #include <tuple>
-#include <vector>
 #include <utility>
+#include <vector>
+
 #include "task/include/task.hpp"
 
 namespace chernov_t_convex_hull_binary_components {

@@ -1,6 +1,8 @@
 #include <gtest/gtest.h>
-#include <vector>
+
 #include <random>
+#include <vector>
+
 #include "chernov_t_convex_hull_binary_components/common/include/common.hpp"
 #include "chernov_t_convex_hull_binary_components/mpi/include/ops_mpi.hpp"
 #include "chernov_t_convex_hull_binary_components/seq/include/ops_seq.hpp"
@@ -71,9 +73,8 @@ TEST_P(ChernovTConvexHullPerfTests, RunPerfModes) {
   ExecuteTest(GetParam());
 }
 
-const auto kAllPerfTasks = ppc::util::MakeAllPerfTasks<InType,
-    ChernovTConvexHullBinaryComponentsSEQ,
-    ChernovTConvexHullBinaryComponentsMPI>(
+const auto kAllPerfTasks =
+    ppc::util::MakeAllPerfTasks<InType, ChernovTConvexHullBinaryComponentsSEQ, ChernovTConvexHullBinaryComponentsMPI>(
         PPC_SETTINGS_chernov_t_convex_hull_binary_components);
 
 const auto kGtestValues = ppc::util::TupleToGTestValues(kAllPerfTasks);

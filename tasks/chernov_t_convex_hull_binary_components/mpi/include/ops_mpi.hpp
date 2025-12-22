@@ -1,5 +1,6 @@
 #pragma once
 #include <vector>
+
 #include "chernov_t_convex_hull_binary_components/common/include/common.hpp"
 #include "task/include/task.hpp"
 
@@ -23,9 +24,7 @@ class ChernovTConvexHullBinaryComponentsMPI : public BaseTask {
   void GatherAndBroadcastResult();
 
   std::vector<std::pair<int, int>> ConvexHull(std::vector<std::pair<int, int>> points);
-  bool Clockwise(const std::pair<int, int>& a,
-                 const std::pair<int, int>& b,
-                 const std::pair<int, int>& c);
+  bool Clockwise(const std::pair<int, int> &a, const std::pair<int, int> &b, const std::pair<int, int> &c);
 
   int width_ = 0;
   int height_ = 0;
