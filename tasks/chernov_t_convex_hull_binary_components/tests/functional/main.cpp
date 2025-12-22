@@ -33,7 +33,8 @@ class ChernovTConvexHullFuncTests : public ppc::util::BaseRunFuncTests<InType, O
   bool CheckTestOutputData(OutType &output_data) final {
     auto expected = std::get<2>(std::get<static_cast<size_t>(ppc::util::GTestParamIndex::kTestParams)>(GetParam()));
 
-    std::set<std::pair<int, int>> out_set, exp_set;
+    std::set<std::pair<int, int>> out_set;
+    std::set<std::pair<int, int>> exp_set;
     for (const auto &hull : output_data) {
       out_set.insert(hull.begin(), hull.end());
     }

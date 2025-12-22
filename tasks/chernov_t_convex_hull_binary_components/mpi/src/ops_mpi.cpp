@@ -4,6 +4,7 @@
 
 #include <algorithm>
 #include <array>
+#include <cstddef>
 #include <cstdint>
 #include <queue>
 #include <utility>
@@ -150,7 +151,8 @@ std::vector<std::vector<std::pair<int, int>>> ChernovTConvexHullBinaryComponents
 
   for (int ey = 0; ey < extended_rows; ++ey) {
     for (int col = 0; col < width; ++col) {
-      std::size_t idx = static_cast<std::size_t>(ey) * static_cast<std::size_t>(width) + static_cast<std::size_t>(col);
+      std::size_t idx =
+          (static_cast<std::size_t>(ey) * static_cast<std::size_t>(width)) + static_cast<std::size_t>(col);
       if (extended_pixels[idx] == 1 && !visited[static_cast<std::size_t>(ey)][static_cast<std::size_t>(col)]) {
         std::vector<std::pair<int, int>> comp;
         std::queue<std::pair<int, int>> q;
@@ -166,7 +168,7 @@ std::vector<std::vector<std::pair<int, int>>> ChernovTConvexHullBinaryComponents
             int ny = cy + dy[dir];
             if (nx >= 0 && nx < width && ny >= 0 && ny < extended_rows) {
               std::size_t nidx =
-                  static_cast<std::size_t>(ny) * static_cast<std::size_t>(width) + static_cast<std::size_t>(nx);
+                  (static_cast<std::size_t>(ny) * static_cast<std::size_t>(width)) + static_cast<std::size_t>(nx);
               if (extended_pixels[nidx] == 1 && !visited[static_cast<std::size_t>(ny)][static_cast<std::size_t>(nx)]) {
                 visited[static_cast<std::size_t>(ny)][static_cast<std::size_t>(nx)] = true;
                 q.emplace(nx, ny);

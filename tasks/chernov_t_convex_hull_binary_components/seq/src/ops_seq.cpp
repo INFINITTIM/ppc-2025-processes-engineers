@@ -2,7 +2,10 @@
 #include "chernov_t_convex_hull_binary_components/seq/include/ops_seq.hpp"
 
 #include <algorithm>
+#include <cstddef>
+#include <cstdint>
 #include <queue>
+#include <utility>
 #include <vector>
 
 namespace chernov_t_convex_hull_binary_components {
