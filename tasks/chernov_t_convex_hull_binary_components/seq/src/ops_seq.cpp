@@ -1,10 +1,12 @@
 #include "chernov_t_convex_hull_binary_components/seq/include/ops_seq.hpp"
 
 #include <algorithm>
+#include <array>
+#include <cstddef>
+#include <cstdint>
 #include <queue>
+#include <utility>
 #include <vector>
-
-#include "chernov_t_convex_hull_binary_components/common/include/common.hpp"
 
 namespace chernov_t_convex_hull_binary_components {
 
@@ -54,19 +56,18 @@ std::vector<std::pair<int, int>> ChernovTConvexHullBinaryComponentsSEQ::ExtractC
   q.emplace(start_col, start_row);
   visited[static_cast<std::size_t>(start_row)][static_cast<std::size_t>(start_col)] = true;
 
-  const std::array<int, 4> dx = {0, 0, -1, 1};
-  const std::array<int, 4> dy = {-1, 1, 0, 0};
-
+  constexpr std::array<std::pair<int, int>, 4> dirs = {{{0, -1}, {0, 1}, {-1, 0}, {1, 0}}};
   while (!q.empty()) {
     auto [cx, cy] = q.front();
     q.pop();
     comp.emplace_back(cx, cy);
 
-    for (int dir = 0; dir < 4; ++dir) {
-      int nx = cx + dx[dir];
-      int ny = cy + dy[dir];
+    for (const auto &[dx, dy] : dirs) {
+      int nx = cx + dx;
+      int ny = cy + dy;
       if (nx >= 0 && nx < width && ny >= 0 && ny < height) {
-        std::size_t idx = static_cast<std::size_t>(ny) * static_cast<std::size_t>(width) + static_cast<std::size_t>(nx);
+        std::size_t idx =
+            (static_cast<std::size_t>(ny) * static_cast<std::size_t>(width)) + static_cast<std::size_t>(nx);
         if (pixels[idx] == 1 && !visited[static_cast<std::size_t>(ny)][static_cast<std::size_t>(nx)]) {
           visited[static_cast<std::size_t>(ny)][static_cast<std::size_t>(nx)] = true;
           q.emplace(nx, ny);
@@ -84,7 +85,8 @@ std::vector<std::vector<std::pair<int, int>>> ChernovTConvexHullBinaryComponents
 
   for (int row = 0; row < height; ++row) {
     for (int col = 0; col < width; ++col) {
-      std::size_t idx = static_cast<std::size_t>(row) * static_cast<std::size_t>(width) + static_cast<std::size_t>(col);
+      std::size_t idx =
+          (static_cast<std::size_t>(row) * static_cast<std::size_t>(width)) + static_cast<std::size_t>(col);
       if (pixels[idx] == 1 && !visited[row][col]) {
         auto comp = ExtractComponent(col, row, pixels, visited, width, height);
         components.push_back(std::move(comp));

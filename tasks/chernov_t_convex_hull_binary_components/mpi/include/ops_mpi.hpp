@@ -1,5 +1,6 @@
 #pragma once
 
+#include <utility>  // for std::pair in return type
 #include <vector>
 
 #include "chernov_t_convex_hull_binary_components/common/include/common.hpp"

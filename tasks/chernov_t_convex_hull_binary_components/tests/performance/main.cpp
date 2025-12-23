@@ -20,7 +20,8 @@ class ChernovTConvexHullPerfTests : public ppc::util::BaseRunPerfTests<InType, O
 
   void SetUp() override {
     std::vector<int> pixels(static_cast<std::size_t>(kWidth_) * static_cast<std::size_t>(kHeight_), 0);
-    std::mt19937 gen(42);
+    std::seed_seq seed{42};
+    std::mt19937 gen(seed);
 
     for (int i = 0; i < 60; ++i) {
       int w = 20 + static_cast<int>(gen() % 80);
