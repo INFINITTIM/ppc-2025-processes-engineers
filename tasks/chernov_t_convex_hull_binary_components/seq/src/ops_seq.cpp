@@ -1,5 +1,4 @@
 #include "chernov_t_convex_hull_binary_components/seq/include/ops_seq.hpp"
-#include "chernov_t_convex_hull_binary_components/common/include/common.hpp"
 
 #include <algorithm>
 #include <array>
@@ -8,6 +7,8 @@
 #include <queue>
 #include <utility>
 #include <vector>
+
+#include "chernov_t_convex_hull_binary_components/common/include/common.hpp"
 
 namespace chernov_t_convex_hull_binary_components {
 
