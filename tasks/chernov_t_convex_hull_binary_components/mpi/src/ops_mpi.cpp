@@ -4,11 +4,13 @@
 
 #include <algorithm>
 #include <array>
-#include <cstddef>  // for std::size_t
-#include <cstdint>  // for std::int64_t
+#include <cstddef>
+#include <cstdint>
 #include <queue>
-#include <utility>  // for std::move
+#include <utility>
 #include <vector>
+
+#include "chernov_t_convex_hull_binary_components/common/include/common.hpp"
 
 namespace chernov_t_convex_hull_binary_components {
 
@@ -110,16 +112,14 @@ void ChernovTConvexHullBinaryComponentsMPI::ExchangeBoundaryRows(bool has_top, b
   std::vector<MPI_Status> statuses(4);
   int req_count = 0;
 
-  std::vector<int> top_recv;
-  std::vector<int> bottom_recv;
+  std::vector<int> top_recv, bottom_recv;
 
   if (has_top) {
     top_recv.resize(width);
     std::vector<int> top_send(local_pixels_.begin(), local_pixels_.begin() + width);
     MPI_Irecv(top_recv.data(), width, MPI_INT, rank_ - 1, 1, MPI_COMM_WORLD, &reqs[req_count]);
     MPI_Isend(top_send.data(), width, MPI_INT, rank_ - 1, 0, MPI_COMM_WORLD, &reqs[req_count + 1]);
-    ++req_count;
-    ++req_count;
+    req_count += 2;
   }
 
   if (has_bottom && rank_ + 1 < size_) {
@@ -127,8 +127,7 @@ void ChernovTConvexHullBinaryComponentsMPI::ExchangeBoundaryRows(bool has_top, b
     std::vector<int> bottom_send(local_pixels_.end() - width, local_pixels_.end());
     MPI_Irecv(bottom_recv.data(), width, MPI_INT, rank_ + 1, 0, MPI_COMM_WORLD, &reqs[req_count]);
     MPI_Isend(bottom_send.data(), width, MPI_INT, rank_ + 1, 1, MPI_COMM_WORLD, &reqs[req_count + 1]);
-    ++req_count;
-    ++req_count;
+    req_count += 2;
   }
 
   if (req_count > 0) {
@@ -151,18 +150,19 @@ std::vector<std::pair<int, int>> ChernovTConvexHullBinaryComponentsMPI::ExtractC
   q.emplace(start_col, start_ey);
   visited[static_cast<std::size_t>(start_ey)][static_cast<std::size_t>(start_col)] = true;
 
-  constexpr std::array<std::pair<int, int>, 4> dirs = {{{0, -1}, {0, 1}, {-1, 0}, {1, 0}}};
   while (!q.empty()) {
     auto [cx, cy] = q.front();
     q.pop();
     comp.emplace_back(cx, global_y_offset + cy);
 
-    for (const auto &[dx, dy] : dirs) {
-      int nx = cx + dx;
-      int ny = cy + dy;
+    const std::array<int, 4> dx = {0, 0, -1, 1};
+    const std::array<int, 4> dy = {-1, 1, 0, 0};
+    for (int dir = 0; dir < 4; ++dir) {
+      int nx = cx + dx[dir];
+      int ny = cy + dy[dir];
       if (nx >= 0 && nx < width && ny >= 0 && ny < extended_rows) {
         std::size_t nidx =
-            (static_cast<std::size_t>(ny) * static_cast<std::size_t>(width)) + static_cast<std::size_t>(nx);
+            static_cast<std::size_t>(ny) * static_cast<std::size_t>(width) + static_cast<std::size_t>(nx);
         if (extended_pixels[nidx] == 1 && !visited[static_cast<std::size_t>(ny)][static_cast<std::size_t>(nx)]) {
           visited[static_cast<std::size_t>(ny)][static_cast<std::size_t>(nx)] = true;
           q.emplace(nx, ny);
@@ -180,8 +180,7 @@ std::vector<std::vector<std::pair<int, int>>> ChernovTConvexHullBinaryComponents
 
   for (int ey = 0; ey < extended_rows; ++ey) {
     for (int col = 0; col < width; ++col) {
-      std::size_t idx =
-          (static_cast<std::size_t>(ey) * static_cast<std::size_t>(width)) + static_cast<std::size_t>(col);
+      std::size_t idx = static_cast<std::size_t>(ey) * static_cast<std::size_t>(width) + static_cast<std::size_t>(col);
       if (extended_pixels[idx] == 1 && !visited[static_cast<std::size_t>(ey)][static_cast<std::size_t>(col)]) {
         auto comp = ExtractComponent(col, ey, extended_pixels, visited, width, extended_rows, global_y_offset);
         all_components.push_back(std::move(comp));
@@ -226,6 +225,7 @@ std::vector<std::pair<int, int>> ChernovTConvexHullBinaryComponentsMPI::ConvexHu
   std::vector<std::pair<int, int>> hull;
   hull.reserve(pts.size() + 1);
 
+  // Lower hull
   for (const auto &p : pts) {
     while (hull.size() >= 2) {
       const auto &a = hull[hull.size() - 2];
@@ -241,6 +241,7 @@ std::vector<std::pair<int, int>> ChernovTConvexHullBinaryComponentsMPI::ConvexHu
     hull.push_back(p);
   }
 
+  // Upper hull
   std::size_t lower_len = hull.size();
   for (auto it = pts.rbegin() + 1; it != pts.rend(); ++it) {
     while (hull.size() > lower_len) {
@@ -267,6 +268,94 @@ void ChernovTConvexHullBinaryComponentsMPI::ComputeConvexHulls() {
   for (auto &comp : local_hulls_) {
     comp = ConvexHull(comp);
   }
+}
+
+bool ChernovTConvexHullBinaryComponentsMPI::RunImpl() {
+  if (!valid_) {
+    GetOutput() = OutType{};
+    return true;
+  }
+  FindConnectedComponentsMpi();
+  ComputeConvexHulls();
+  GatherAndBroadcastResult();
+  return true;
+}
+
+bool ChernovTConvexHullBinaryComponentsMPI::PostProcessingImpl() {
+  local_pixels_.clear();
+  local_hulls_.clear();
+  return true;
+}
+
+void ChernovTConvexHullBinaryComponentsMPI::GatherAndBroadcastResult() {
+  std::vector<int> local_flat;
+  std::vector<int> local_sizes;
+  for (const auto &hull : local_hulls_) {
+    local_sizes.push_back(static_cast<int>(hull.size()));
+    for (const auto &p : hull) {
+      local_flat.push_back(p.first);
+      local_flat.push_back(p.second);
+    }
+  }
+
+  OutType global_hulls;
+  if (rank_ == 0) {
+    std::vector<int> all_sizes = local_sizes;
+    std::vector<int> global_flat = local_flat;
+    for (int src = 1; src < size_; ++src) {
+      ReceiveHullsFromRank(src, all_sizes, global_flat);
+    }
+    std::size_t idx = 0;
+    for (int sz : all_sizes) {
+      std::vector<std::pair<int, int>> hull(static_cast<std::size_t>(sz));
+      for (int j = 0; j < sz; ++j, idx += 2) {
+        hull[static_cast<std::size_t>(j)] = {global_flat[idx], global_flat[idx + 1]};
+      }
+      global_hulls.push_back(std::move(hull));
+    }
+  } else {
+    SendHullsToRank0(local_flat, local_sizes);
+  }
+
+  int total_hulls = static_cast<int>(global_hulls.size());
+  MPI_Bcast(&total_hulls, 1, MPI_INT, 0, MPI_COMM_WORLD);
+  std::vector<int> all_sizes(total_hulls);
+  if (rank_ == 0) {
+    for (int i = 0; i < total_hulls; ++i) {
+      all_sizes[i] = static_cast<int>(global_hulls[static_cast<std::size_t>(i)].size());
+    }
+  }
+  MPI_Bcast(all_sizes.data(), total_hulls, MPI_INT, 0, MPI_COMM_WORLD);
+
+  int total_pts = 0;
+  for (int s : all_sizes) {
+    total_pts += s;
+  }
+  MPI_Bcast(&total_pts, 1, MPI_INT, 0, MPI_COMM_WORLD);
+
+  std::vector<int> flat(static_cast<std::size_t>(total_pts) * 2);
+  if (rank_ == 0) {
+    flat.clear();
+    for (const auto &h : global_hulls) {
+      for (const auto &p : h) {
+        flat.push_back(p.first);
+        flat.push_back(p.second);
+      }
+    }
+  }
+  MPI_Bcast(flat.data(), total_pts * 2, MPI_INT, 0, MPI_COMM_WORLD);
+
+  global_hulls.clear();
+  std::size_t idx = 0;
+  for (int i = 0; i < total_hulls; ++i) {
+    int sz = all_sizes[i];
+    std::vector<std::pair<int, int>> hull(static_cast<std::size_t>(sz));
+    for (int j = 0; j < sz; ++j, idx += 2) {
+      hull[static_cast<std::size_t>(j)] = {flat[idx], flat[idx + 1]};
+    }
+    global_hulls.push_back(std::move(hull));
+  }
+  GetOutput() = std::move(global_hulls);
 }
 
 void ChernovTConvexHullBinaryComponentsMPI::SendHullsToRank0(const std::vector<int> &local_flat,
@@ -299,105 +388,6 @@ void ChernovTConvexHullBinaryComponentsMPI::ReceiveHullsFromRank(int src, std::v
       global_flat.insert(global_flat.end(), pts_data.begin(), pts_data.end());
     }
   }
-}
-
-void ChernovTConvexHullBinaryComponentsMPI::GatherLocalHulls(std::vector<int> &local_flat,
-                                                             std::vector<int> &local_sizes) {
-  for (const auto &hull : local_hulls_) {
-    local_sizes.push_back(static_cast<int>(hull.size()));
-    for (const auto &p : hull) {
-      local_flat.push_back(p.first);
-      local_flat.push_back(p.second);
-    }
-  }
-}
-
-void ChernovTConvexHullBinaryComponentsMPI::CollectGlobalHulls(const std::vector<int> &local_flat,
-                                                               const std::vector<int> &local_sizes,
-                                                               OutType &global_hulls) {
-  if (rank_ == 0) {
-    std::vector<int> all_sizes = local_sizes;
-    std::vector<int> global_flat = local_flat;
-    for (int src = 1; src < size_; ++src) {
-      ReceiveHullsFromRank(src, all_sizes, global_flat);
-    }
-    std::size_t idx = 0;
-    for (int sz : all_sizes) {
-      std::vector<std::pair<int, int>> hull(static_cast<std::size_t>(sz));
-      for (int j = 0; j < sz; ++j, idx += 2) {
-        hull[static_cast<std::size_t>(j)] = {global_flat[idx], global_flat[idx + 1]};
-      }
-      global_hulls.push_back(std::move(hull));
-    }
-  } else {
-    SendHullsToRank0(local_flat, local_sizes);
-  }
-}
-
-void ChernovTConvexHullBinaryComponentsMPI::BroadcastResult(const OutType &global_hulls) {
-  int total_hulls = static_cast<int>(global_hulls.size());
-  MPI_Bcast(&total_hulls, 1, MPI_INT, 0, MPI_COMM_WORLD);
-
-  std::vector<int> all_sizes(total_hulls);
-  if (rank_ == 0) {
-    for (int i = 0; i < total_hulls; ++i) {
-      all_sizes[i] = static_cast<int>(global_hulls[static_cast<std::size_t>(i)].size());
-    }
-  }
-  MPI_Bcast(all_sizes.data(), total_hulls, MPI_INT, 0, MPI_COMM_WORLD);
-
-  int total_pts = 0;
-  for (int s : all_sizes) {
-    total_pts += s;
-  }
-  MPI_Bcast(&total_pts, 1, MPI_INT, 0, MPI_COMM_WORLD);
-
-  std::vector<int> flat(static_cast<std::size_t>(total_pts) * 2);
-  if (rank_ == 0) {
-    for (const auto &h : global_hulls) {
-      for (const auto &p : h) {
-        flat.push_back(p.first);
-        flat.push_back(p.second);
-      }
-    }
-  }
-  MPI_Bcast(flat.data(), total_pts * 2, MPI_INT, 0, MPI_COMM_WORLD);
-
-  OutType reconstructed;
-  std::size_t idx = 0;
-  for (int i = 0; i < total_hulls; ++i) {
-    int sz = all_sizes[i];
-    std::vector<std::pair<int, int>> hull(static_cast<std::size_t>(sz));
-    for (int j = 0; j < sz; ++j, idx += 2) {
-      hull[static_cast<std::size_t>(j)] = {flat[idx], flat[idx + 1]};
-    }
-    reconstructed.push_back(std::move(hull));
-  }
-  GetOutput() = std::move(reconstructed);
-}
-
-bool ChernovTConvexHullBinaryComponentsMPI::RunImpl() {
-  if (!valid_) {
-    GetOutput() = OutType{};
-    return true;
-  }
-  FindConnectedComponentsMpi();
-  ComputeConvexHulls();
-
-  std::vector<int> local_flat;
-  std::vector<int> local_sizes;
-  GatherLocalHulls(local_flat, local_sizes);
-
-  OutType global_hulls;
-  CollectGlobalHulls(local_flat, local_sizes, global_hulls);
-  BroadcastResult(global_hulls);
-  return true;
-}
-
-bool ChernovTConvexHullBinaryComponentsMPI::PostProcessingImpl() {
-  local_pixels_.clear();
-  local_hulls_.clear();
-  return true;
 }
 
 }  // namespace chernov_t_convex_hull_binary_components
