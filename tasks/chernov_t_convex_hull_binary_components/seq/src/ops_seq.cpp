@@ -2,12 +2,10 @@
 
 #include <algorithm>
 #include <array>
-#include <cstddef>
-#include <cstdint>
-#include <iterator>
 #include <queue>
-#include <utility>
 #include <vector>
+
+#include "chernov_t_convex_hull_binary_components/common/include/common.hpp"
 
 namespace chernov_t_convex_hull_binary_components {
 
@@ -25,12 +23,8 @@ bool ChernovTConvexHullBinaryComponentsSEQ::ValidationImpl() {
   if (pixels.size() != static_cast<std::size_t>(width) * static_cast<std::size_t>(height)) {
     return false;
   }
-  for (int p : pixels) {
-    if (p != 0 && p != 1) {
-      return false;
-    }
-  }
-  return true;
+
+  return std::ranges::all_of(pixels, [](int p) { return p == 0 || p == 1; });
 }
 
 bool ChernovTConvexHullBinaryComponentsSEQ::PreProcessingImpl() {
@@ -63,9 +57,8 @@ std::vector<std::vector<std::pair<int, int>>> ChernovTConvexHullBinaryComponents
 
   for (int row = 0; row < height; ++row) {
     for (int col = 0; col < width; ++col) {
-      if (pixels[static_cast<std::size_t>(row) * static_cast<std::size_t>(width) + static_cast<std::size_t>(col)] ==
-              1 &&
-          !visited[row][col]) {
+      std::size_t idx = static_cast<std::size_t>(row) * static_cast<std::size_t>(width) + static_cast<std::size_t>(col);
+      if (pixels[idx] == 1 && !visited[row][col]) {
         std::vector<std::pair<int, int>> comp;
         std::queue<std::pair<int, int>> q;
         q.emplace(col, row);
@@ -75,15 +68,17 @@ std::vector<std::vector<std::pair<int, int>>> ChernovTConvexHullBinaryComponents
           auto [cx, cy] = q.front();
           q.pop();
           comp.emplace_back(cx, cy);
+
           for (int dir = 0; dir < 4; ++dir) {
-            int nx = cx + dx.at(dir);
-            int ny = cy + dy.at(dir);
-            if (nx >= 0 && nx < width && ny >= 0 && ny < height &&
-                pixels[static_cast<std::size_t>(ny) * static_cast<std::size_t>(width) + static_cast<std::size_t>(nx)] ==
-                    1 &&
-                !visited[ny][nx]) {
-              visited[ny][nx] = true;
-              q.emplace(nx, ny);
+            int nx = cx + dx[dir];
+            int ny = cy + dy[dir];
+            if (nx >= 0 && nx < width && ny >= 0 && ny < height) {
+              std::size_t nidx =
+                  static_cast<std::size_t>(ny) * static_cast<std::size_t>(width) + static_cast<std::size_t>(nx);
+              if (pixels[nidx] == 1 && !visited[ny][nx]) {
+                visited[ny][nx] = true;
+                q.emplace(nx, ny);
+              }
             }
           }
         }
@@ -97,21 +92,20 @@ std::vector<std::vector<std::pair<int, int>>> ChernovTConvexHullBinaryComponents
 void ChernovTConvexHullBinaryComponentsSEQ::BuildLowerHull(std::vector<std::pair<int, int>> &hull,
                                                            const std::vector<std::pair<int, int>> &pts) {
   std::size_t k = 0;
-  for (std::size_t i = 0; i < pts.size(); ++i) {
+  for (const auto &pt : pts) {
     while (k >= 2U) {
       const auto &a = hull[k - 2];
       const auto &b = hull[k - 1];
-      const auto &c = pts[i];
       std::int64_t cross =
-          (static_cast<std::int64_t>(b.first - a.first) * static_cast<std::int64_t>(c.second - a.second)) -
-          (static_cast<std::int64_t>(b.second - a.second) * static_cast<std::int64_t>(c.first - a.first));
+          (static_cast<std::int64_t>(b.first - a.first) * static_cast<std::int64_t>(pt.second - a.second)) -
+          (static_cast<std::int64_t>(b.second - a.second) * static_cast<std::int64_t>(pt.first - a.first));
       if (cross > 0) {
         break;
       }
       --k;
       hull.pop_back();
     }
-    hull.push_back(pts[i]);
+    hull.push_back(pt);
     ++k;
   }
 }
@@ -120,21 +114,21 @@ void ChernovTConvexHullBinaryComponentsSEQ::BuildUpperHull(std::vector<std::pair
                                                            const std::vector<std::pair<int, int>> &pts) {
   std::size_t k = hull.size();
   std::size_t t = k + 1;
-  for (std::size_t i = pts.size() - 2; i != static_cast<std::size_t>(-1); --i) {
+  for (std::size_t i = pts.size(); i-- > 0 && i > 0;) {
+    const auto &pt = pts[i];
     while (k >= t) {
       const auto &a = hull[k - 2];
       const auto &b = hull[k - 1];
-      const auto &c = pts[i];
       std::int64_t cross =
-          (static_cast<std::int64_t>(b.first - a.first) * static_cast<std::int64_t>(c.second - a.second)) -
-          (static_cast<std::int64_t>(b.second - a.second) * static_cast<std::int64_t>(c.first - a.first));
+          (static_cast<std::int64_t>(b.first - a.first) * static_cast<std::int64_t>(pt.second - a.second)) -
+          (static_cast<std::int64_t>(b.second - a.second) * static_cast<std::int64_t>(pt.first - a.first));
       if (cross > 0) {
         break;
       }
       --k;
       hull.pop_back();
     }
-    hull.push_back(pts[i]);
+    hull.push_back(pt);
     ++k;
   }
   if (hull.size() > 1U) {
@@ -147,16 +141,12 @@ std::vector<std::pair<int, int>> ChernovTConvexHullBinaryComponentsSEQ::ConvexHu
   if (pts.size() <= 1U) {
     return pts;
   }
-  std::sort(pts.begin(), pts.end());
-  auto last = std::unique(pts.begin(), pts.end());
-  pts.erase(last, pts.end());
-  if (pts.size() == 1U) {
-    return pts;
-  }
-  if (pts.size() == 2U) {
-    if (pts[0] == pts[1]) {
-      return {pts[0]};
-    }
+
+  std::ranges::sort(pts);
+  auto [first, last] = std::ranges::unique(pts);
+  pts.erase(first, last);
+
+  if (pts.size() <= 2U) {
     return pts;
   }
 
@@ -164,13 +154,6 @@ std::vector<std::pair<int, int>> ChernovTConvexHullBinaryComponentsSEQ::ConvexHu
   BuildLowerHull(hull, pts);
   BuildUpperHull(hull, pts);
   return hull;
-}
-
-bool ChernovTConvexHullBinaryComponentsSEQ::Clockwise(const std::pair<int, int> &a, const std::pair<int, int> &b,
-                                                      const std::pair<int, int> &c) {
-  std::int64_t cross = (static_cast<std::int64_t>(b.first - a.first) * static_cast<std::int64_t>(c.second - a.second)) -
-                       (static_cast<std::int64_t>(b.second - a.second) * static_cast<std::int64_t>(c.first - a.first));
-  return cross > 0;
 }
 
 }  // namespace chernov_t_convex_hull_binary_components

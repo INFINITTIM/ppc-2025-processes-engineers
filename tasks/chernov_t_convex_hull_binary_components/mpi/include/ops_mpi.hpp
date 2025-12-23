@@ -1,5 +1,5 @@
 #pragma once
-#include <utility>
+
 #include <vector>
 
 #include "chernov_t_convex_hull_binary_components/common/include/common.hpp"
@@ -22,18 +22,16 @@ class ChernovTConvexHullBinaryComponentsMPI : public BaseTask {
 
   void FindConnectedComponentsMpi();
   void ExchangeBoundaryRows(bool has_top, bool has_bottom, std::vector<int> &extended_pixels, int width);
-  std::vector<std::vector<std::pair<int, int>>> ProcessExtendedRegion(const std::vector<int> &extended_pixels,
-                                                                      int extended_rows, int width,
-                                                                      int global_y_offset);
+  static std::vector<std::vector<std::pair<int, int>>> ProcessExtendedRegion(const std::vector<int> &extended_pixels,
+                                                                             int extended_rows, int width,
+                                                                             int global_y_offset);
   void FilterLocalComponents(const std::vector<std::vector<std::pair<int, int>>> &all_components);
-
   void ComputeConvexHulls();
   void GatherAndBroadcastResult();
-  void SendHullsToRank0(const std::vector<int> &local_flat, const std::vector<int> &local_sizes);
-  void ReceiveHullsFromRank(int src, std::vector<int> &all_sizes, std::vector<int> &global_flat);
+  static void SendHullsToRank0(const std::vector<int> &local_flat, const std::vector<int> &local_sizes, int rank);
+  static void ReceiveHullsFromRank(int src, std::vector<int> &all_sizes, std::vector<int> &global_flat);
 
   static std::vector<std::pair<int, int>> ConvexHull(std::vector<std::pair<int, int>> pts);
-  static bool Clockwise(const std::pair<int, int> &a, const std::pair<int, int> &b, const std::pair<int, int> &c);
   static void BuildLowerHull(std::vector<std::pair<int, int>> &hull, const std::vector<std::pair<int, int>> &pts);
   static void BuildUpperHull(std::vector<std::pair<int, int>> &hull, const std::vector<std::pair<int, int>> &pts);
 
