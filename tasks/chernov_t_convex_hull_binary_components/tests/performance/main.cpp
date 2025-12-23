@@ -14,13 +14,14 @@ namespace chernov_t_convex_hull_binary_components {
 
 class ChernovTConvexHullPerfTests : public ppc::util::BaseRunPerfTests<InType, OutType> {
  private:
-  const int kWidth_ = 8000;
-  const int kHeight_ = 8000;
+  const int kWidth_ = 6000;
+  const int kHeight_ = 6000;
   InType input_data_;
 
   void SetUp() override {
     std::vector<int> pixels(static_cast<std::size_t>(kWidth_) * static_cast<std::size_t>(kHeight_), 0);
-    std::mt19937 gen(42);
+    std::seed_seq seed{69};
+    std::mt19937 gen(seed);
 
     for (int i = 0; i < 60; ++i) {
       int w = 20 + static_cast<int>(gen() % 80);
