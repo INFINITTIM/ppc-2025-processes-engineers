@@ -354,7 +354,6 @@ void ChernovTConvexHullBinaryComponentsMPI::GatherAndBroadcastResult() {
     BroadcastResultToAllRanks(global_hulls);
   } else {
     SendHullsToRank0(local_flat, local_sizes);
-    // Recv result via broadcast in BroadcastResultToAllRanks logic (executed only on rank 0, others wait for Bcast)
     BroadcastResultToAllRanks({});
   }
 }

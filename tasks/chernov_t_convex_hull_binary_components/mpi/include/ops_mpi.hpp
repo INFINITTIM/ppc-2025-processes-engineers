@@ -1,5 +1,6 @@
 #pragma once
-#include <utility>  // std::pair
+
+#include <utility>
 #include <vector>
 
 #include "chernov_t_convex_hull_binary_components/common/include/common.hpp"
@@ -32,7 +33,6 @@ class ChernovTConvexHullBinaryComponentsMPI : public BaseTask {
   void ComputeConvexHulls();
   void GatherAndBroadcastResult();
 
-  // Helper functions to reduce cognitive complexity
   void GatherHullsOnRank0(std::vector<int> &all_sizes, std::vector<int> &global_flat);
   void BroadcastResultToAllRanks(const std::vector<std::vector<std::pair<int, int>>> &global_hulls);
 
