@@ -25,15 +25,17 @@ class ChernovTConvexHullBinaryComponentsMPI : public BaseTask {
   static std::vector<std::vector<std::pair<int, int>>> ProcessExtendedRegion(const std::vector<int> &extended_pixels,
                                                                              int extended_rows, int width,
                                                                              int global_y_offset);
+  static std::vector<std::pair<int, int>> ExtractComponent(int start_col, int start_ey,
+                                                           const std::vector<int> &extended_pixels,
+                                                           std::vector<std::vector<bool>> &visited, int width,
+                                                           int extended_rows, int global_y_offset);
   void FilterLocalComponents(const std::vector<std::vector<std::pair<int, int>>> &all_components);
   void ComputeConvexHulls();
   void GatherAndBroadcastResult();
+
   static void SendHullsToRank0(const std::vector<int> &local_flat, const std::vector<int> &local_sizes);
   static void ReceiveHullsFromRank(int src, std::vector<int> &all_sizes, std::vector<int> &global_flat);
-
   static std::vector<std::pair<int, int>> ConvexHull(std::vector<std::pair<int, int>> pts);
-  static void BuildLowerHull(std::vector<std::pair<int, int>> &hull, const std::vector<std::pair<int, int>> &pts);
-  static void BuildUpperHull(std::vector<std::pair<int, int>> &hull, const std::vector<std::pair<int, int>> &pts);
 
   int width_ = 0;
   int height_ = 0;

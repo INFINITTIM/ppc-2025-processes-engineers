@@ -1,11 +1,12 @@
 #pragma once
-#include <utility>
+
 #include <vector>
 
 #include "chernov_t_convex_hull_binary_components/common/include/common.hpp"
 #include "task/include/task.hpp"
 
 namespace chernov_t_convex_hull_binary_components {
+
 class ChernovTConvexHullBinaryComponentsSEQ : public BaseTask {
  public:
   static constexpr ppc::task::TypeOfTask GetStaticTypeOfTask() {
@@ -21,9 +22,10 @@ class ChernovTConvexHullBinaryComponentsSEQ : public BaseTask {
 
   static std::vector<std::vector<std::pair<int, int>>> FindConnectedComponents(int width, int height,
                                                                                const std::vector<int> &pixels);
+  static std::vector<std::pair<int, int>> ExtractComponent(int start_col, int start_row, const std::vector<int> &pixels,
+                                                           std::vector<std::vector<bool>> &visited, int width,
+                                                           int height);
   static std::vector<std::pair<int, int>> ConvexHull(std::vector<std::pair<int, int>> pts);
-  static bool Clockwise(const std::pair<int, int> &a, const std::pair<int, int> &b, const std::pair<int, int> &c);
-  static void BuildLowerHull(std::vector<std::pair<int, int>> &hull, const std::vector<std::pair<int, int>> &pts);
-  static void BuildUpperHull(std::vector<std::pair<int, int>> &hull, const std::vector<std::pair<int, int>> &pts);
 };
+
 }  // namespace chernov_t_convex_hull_binary_components
