@@ -315,7 +315,7 @@ void ChernovTConvexHullBinaryComponentsMPI::GatherAndBroadcastResult() {
       global_hulls.push_back(std::move(hull));
     }
   } else {
-    SendHullsToRank0(local_flat, local_sizes, rank_);
+    SendHullsToRank0(local_flat, local_sizes);
   }
 
   int total_hulls = static_cast<int>(global_hulls.size());
@@ -360,7 +360,7 @@ void ChernovTConvexHullBinaryComponentsMPI::GatherAndBroadcastResult() {
 }
 
 void ChernovTConvexHullBinaryComponentsMPI::SendHullsToRank0(const std::vector<int> &local_flat,
-                                                             const std::vector<int> &local_sizes, int rank) {
+                                                             const std::vector<int> &local_sizes) {
   int count = static_cast<int>(local_sizes.size());
   MPI_Send(&count, 1, MPI_INT, 0, 0, MPI_COMM_WORLD);
   if (count > 0) {

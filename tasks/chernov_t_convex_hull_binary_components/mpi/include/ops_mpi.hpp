@@ -28,7 +28,7 @@ class ChernovTConvexHullBinaryComponentsMPI : public BaseTask {
   void FilterLocalComponents(const std::vector<std::vector<std::pair<int, int>>> &all_components);
   void ComputeConvexHulls();
   void GatherAndBroadcastResult();
-  static void SendHullsToRank0(const std::vector<int> &local_flat, const std::vector<int> &local_sizes, int rank);
+  static void SendHullsToRank0(const std::vector<int> &local_flat, const std::vector<int> &local_sizes);
   static void ReceiveHullsFromRank(int src, std::vector<int> &all_sizes, std::vector<int> &global_flat);
 
   static std::vector<std::pair<int, int>> ConvexHull(std::vector<std::pair<int, int>> pts);
