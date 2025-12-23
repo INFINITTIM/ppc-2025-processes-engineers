@@ -1,5 +1,7 @@
 #include <gtest/gtest.h>
 
+#include <cstddef>
+#include <cstdint>
 #include <random>
 #include <vector>
 
@@ -35,10 +37,11 @@ class ChernovTConvexHullPerfTests : public ppc::util::BaseRunPerfTests<InType, O
     auto draw_circle = [&](int cx, int cy, int r) {
       for (int dy = -r; dy <= r; ++dy) {
         for (int dx = -r; dx <= r; ++dx) {
-          if (static_cast<std::int64_t>(dx) * static_cast<std::int64_t>(dx) +
-                  static_cast<std::int64_t>(dy) * static_cast<std::int64_t>(dy) <=
+          if ((static_cast<std::int64_t>(dx) * static_cast<std::int64_t>(dx) +
+               static_cast<std::int64_t>(dy) * static_cast<std::int64_t>(dy)) <=
               static_cast<std::int64_t>(r) * static_cast<std::int64_t>(r)) {
-            int x = cx + dx, y = cy + dy;
+            int x = cx + dx;
+            int y = cy + dy;
             if (x >= 0 && x < kWidth_ && y >= 0 && y < kHeight_) {
               pixels[static_cast<std::size_t>(y * kWidth_) + static_cast<std::size_t>(x)] = 1;
             }
