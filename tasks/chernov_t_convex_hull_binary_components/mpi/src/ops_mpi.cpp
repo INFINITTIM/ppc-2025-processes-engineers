@@ -4,10 +4,10 @@
 
 #include <algorithm>
 #include <array>
-#include <cstddef>  // std::size_t, std::ptrdiff_t
-#include <cstdint>  // std::int64_t
+#include <cstddef>
+#include <cstdint>
 #include <queue>
-#include <utility>  // std::pair, std::move
+#include <utility>
 #include <vector>
 
 #include "chernov_t_convex_hull_binary_components/common/include/common.hpp"
@@ -150,12 +150,12 @@ std::vector<std::pair<int, int>> ChernovTConvexHullBinaryComponentsMPI::ExtractC
   q.emplace(start_col, start_ey);
   visited[static_cast<std::size_t>(start_ey)][static_cast<std::size_t>(start_col)] = true;
 
-  constexpr std::array<std::pair<int, int>, 4> dirs = {{{0, -1}, {0, 1}, {-1, 0}, {1, 0}}};
+  constexpr std::array<std::pair<int, int>, 4> kDirs = {{{0, -1}, {0, 1}, {-1, 0}, {1, 0}}};
   while (!q.empty()) {
     auto [cx, cy] = q.front();
     q.pop();
     comp.emplace_back(cx, global_y_offset + cy);
-    for (const auto &[dx, dy] : dirs) {
+    for (const auto &[dx, dy] : kDirs) {
       int nx = cx + dx;
       int ny = cy + dy;
       if (nx >= 0 && nx < width && ny >= 0 && ny < extended_rows) {

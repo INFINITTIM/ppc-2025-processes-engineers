@@ -20,8 +20,7 @@ class ChernovTConvexHullPerfTests : public ppc::util::BaseRunPerfTests<InType, O
 
   void SetUp() override {
     std::vector<int> pixels(static_cast<std::size_t>(kWidth_) * static_cast<std::size_t>(kHeight_), 0);
-    std::seed_seq seed{42};
-    std::mt19937 gen(seed);
+    std::mt19937 gen(42);
 
     for (int i = 0; i < 60; ++i) {
       int w = 20 + static_cast<int>(gen() % 80);
@@ -38,8 +37,8 @@ class ChernovTConvexHullPerfTests : public ppc::util::BaseRunPerfTests<InType, O
     auto draw_circle = [&](int cx, int cy, int r) {
       for (int dy = -r; dy <= r; ++dy) {
         for (int dx = -r; dx <= r; ++dx) {
-          if ((static_cast<std::int64_t>(dx) * static_cast<std::int64_t>(dx) +
-               static_cast<std::int64_t>(dy) * static_cast<std::int64_t>(dy)) <=
+          if (((static_cast<std::int64_t>(dx) * static_cast<std::int64_t>(dx)) +
+               (static_cast<std::int64_t>(dy) * static_cast<std::int64_t>(dy))) <=
               static_cast<std::int64_t>(r) * static_cast<std::int64_t>(r)) {
             int x = cx + dx;
             int y = cy + dy;
@@ -59,7 +58,7 @@ class ChernovTConvexHullPerfTests : public ppc::util::BaseRunPerfTests<InType, O
 
     std::size_t noise_count = (static_cast<std::size_t>(kWidth_) * static_cast<std::size_t>(kHeight_)) / 1000;
     for (std::size_t i = 0; i < noise_count; ++i) {
-      std::size_t idx =
+      auto idx =
           static_cast<std::size_t>(gen() % (static_cast<std::int64_t>(kWidth_) * static_cast<std::int64_t>(kHeight_)));
       pixels[idx] = 1;
     }

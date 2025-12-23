@@ -1,4 +1,5 @@
 #include "chernov_t_convex_hull_binary_components/seq/include/ops_seq.hpp"
+#include "chernov_t_convex_hull_binary_components/common/include/common.hpp"
 
 #include <algorithm>
 #include <array>
@@ -56,13 +57,13 @@ std::vector<std::pair<int, int>> ChernovTConvexHullBinaryComponentsSEQ::ExtractC
   q.emplace(start_col, start_row);
   visited[static_cast<std::size_t>(start_row)][static_cast<std::size_t>(start_col)] = true;
 
-  constexpr std::array<std::pair<int, int>, 4> dirs = {{{0, -1}, {0, 1}, {-1, 0}, {1, 0}}};
+  constexpr std::array<std::pair<int, int>, 4> kDirs = {{{0, -1}, {0, 1}, {-1, 0}, {1, 0}}};
   while (!q.empty()) {
     auto [cx, cy] = q.front();
     q.pop();
     comp.emplace_back(cx, cy);
 
-    for (const auto &[dx, dy] : dirs) {
+    for (const auto &[dx, dy] : kDirs) {
       int nx = cx + dx;
       int ny = cy + dy;
       if (nx >= 0 && nx < width && ny >= 0 && ny < height) {
