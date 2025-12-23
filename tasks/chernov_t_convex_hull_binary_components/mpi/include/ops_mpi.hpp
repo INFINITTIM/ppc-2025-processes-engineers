@@ -1,13 +1,11 @@
 #pragma once
-
-#include <utility>  // for std::pair in return type
+#include <utility>  // std::pair
 #include <vector>
 
 #include "chernov_t_convex_hull_binary_components/common/include/common.hpp"
 #include "task/include/task.hpp"
 
 namespace chernov_t_convex_hull_binary_components {
-
 class ChernovTConvexHullBinaryComponentsMPI : public BaseTask {
  public:
   static constexpr ppc::task::TypeOfTask GetStaticTypeOfTask() {
@@ -34,6 +32,10 @@ class ChernovTConvexHullBinaryComponentsMPI : public BaseTask {
   void ComputeConvexHulls();
   void GatherAndBroadcastResult();
 
+  // Helper functions to reduce cognitive complexity
+  void GatherHullsOnRank0(std::vector<int> &all_sizes, std::vector<int> &global_flat);
+  void BroadcastResultToAllRanks(const std::vector<std::vector<std::pair<int, int>>> &global_hulls);
+
   static void SendHullsToRank0(const std::vector<int> &local_flat, const std::vector<int> &local_sizes);
   static void ReceiveHullsFromRank(int src, std::vector<int> &all_sizes, std::vector<int> &global_flat);
   static std::vector<std::pair<int, int>> ConvexHull(std::vector<std::pair<int, int>> pts);
@@ -48,5 +50,4 @@ class ChernovTConvexHullBinaryComponentsMPI : public BaseTask {
   std::vector<std::vector<std::pair<int, int>>> local_hulls_;
   bool valid_ = false;
 };
-
 }  // namespace chernov_t_convex_hull_binary_components
