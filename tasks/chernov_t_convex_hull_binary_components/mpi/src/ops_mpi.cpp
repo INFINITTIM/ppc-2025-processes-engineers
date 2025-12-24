@@ -228,7 +228,7 @@ std::vector<std::pair<int, int>> ChernovTConvexHullBinaryComponentsMPI::ConvexHu
       std::int64_t cross =
           (static_cast<std::int64_t>(b.first - a.first) * static_cast<std::int64_t>(p.second - a.second)) -
           (static_cast<std::int64_t>(b.second - a.second) * static_cast<std::int64_t>(p.first - a.first));
-      if (cross >= 0) {
+      if (cross > 0) {
         break;
       }
       hull.pop_back();
@@ -245,7 +245,7 @@ std::vector<std::pair<int, int>> ChernovTConvexHullBinaryComponentsMPI::ConvexHu
       std::int64_t cross =
           (static_cast<std::int64_t>(b.first - a.first) * static_cast<std::int64_t>(it->second - a.second)) -
           (static_cast<std::int64_t>(b.second - a.second) * static_cast<std::int64_t>(it->first - a.first));
-      if (cross >= 0) {
+      if (cross > 0) {
         break;
       }
       hull.pop_back();

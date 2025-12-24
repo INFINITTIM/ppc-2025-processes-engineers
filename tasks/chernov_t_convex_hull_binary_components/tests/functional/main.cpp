@@ -77,12 +77,18 @@ TEST_P(ChernovTConvexHullFuncTests, ConvexHullBinaryComponents) {
   ExecuteTest(GetParam());
 }
 
-const std::array<TestType, 5> kTestParam = {
-    {std::make_tuple("Empty", "empty.txt", OutType{}), std::make_tuple("SinglePixel", "single.txt", OutType{{{0, 0}}}),
-     std::make_tuple("Diag3x3", "diag3x3.txt", OutType{{{0, 0}}, {{1, 1}}, {{2, 2}}}),
-     std::make_tuple("Square2x2", "square2x2.txt", OutType{{{0, 0}, {0, 1}, {1, 1}, {1, 0}}}),
-     std::make_tuple("TwoSquares", "two_squares.txt",
-                     OutType{{{0, 0}, {0, 1}, {1, 1}, {1, 0}}, {{3, 0}, {3, 1}, {4, 1}, {4, 0}}})}};
+const std::array<TestType, 9> kTestParam = {
+    std::make_tuple("Empty", "empty.txt", OutType{}),
+    std::make_tuple("SinglePixel", "single.txt", OutType{{{0, 0}}}),
+    std::make_tuple("TwoPoints", "two_points.txt", OutType{{{0, 0}, {1, 1}}}),
+    std::make_tuple("ThreeCollinear", "three_collinear.txt", OutType{{{0, 0}, {2, 0}}}),
+    std::make_tuple("Triangle", "triangle.txt", OutType{{{0, 0}, {2, 1}, {1, 2}}}),
+    std::make_tuple("Square2x2", "square2x2.txt", OutType{{{0, 0}, {0, 1}, {1, 1}, {1, 0}}}),
+    std::make_tuple("Pentagon", "pentagon.txt",
+                    OutType{{{2, 0}, {1, 1}, {3, 1}, {0, 2}, {4, 2}, {1, 3}, {3, 3}, {2, 4}}}),
+    std::make_tuple("TwoSquares", "two_squares.txt",
+                    OutType{{{0, 0}, {0, 1}, {1, 1}, {1, 0}}, {{3, 0}, {3, 1}, {4, 1}, {4, 0}}}),
+    std::make_tuple("HorizontalLine", "horizontal_line.txt", OutType{{{0, 0}, {5, 0}}})};
 
 const auto kTestTasksList = std::tuple_cat(ppc::util::AddFuncTask<ChernovTConvexHullBinaryComponentsMPI, InType>(
                                                kTestParam, PPC_SETTINGS_chernov_t_convex_hull_binary_components),
